@@ -7,7 +7,6 @@ from pathlib import Path
 from llama_index.core import (
     Document,
     Settings,
-    SimpleDirectoryReader,
     StorageContext,
     VectorStoreIndex,
     load_index_from_storage,
@@ -34,30 +33,6 @@ def _load_index(index_dir: Path) -> VectorStoreIndex:
     return load_index_from_storage(storage_context)
 
 
-def ingest_directory(
-    data_dir: Path,
-    index_dir: Path = DEFAULT_INDEX_DIR,
-    model_name: str = DEFAULT_EMBED_MODEL,
-    recursive: bool = True,
-) -> int:
-    if not data_dir.exists():
-        raise FileNotFoundError(f"Data directory not found: {data_dir}")
-
-    _set_embedding_model(model_name)
-    docs = SimpleDirectoryReader(
-        input_dir=str(data_dir),
-        recursive=recursive,
-        filename_as_id=True,
-    ).load_data()
-    if not docs:
-        raise ValueError(f"No documents were loaded from: {data_dir}")
-
-    index = VectorStoreIndex.from_documents(docs, show_progress=True)
-    index_dir.mkdir(parents=True, exist_ok=True)
-    index.storage_context.persist(persist_dir=str(index_dir))
-    return len(docs)
-
-
 def ingest_documents(
     documents: Iterable[Document],
     index_dir: Path = DEFAULT_INDEX_DIR,
@@ -82,7 +57,7 @@ def search(
 ) -> list[SearchHit]:
     if not index_dir.exists():
         raise FileNotFoundError(
-            f"Index directory not found: {index_dir}. Run ingest first."
+            f"Index directory not found: {index_dir}. Run import-takeout first."
         )
 
     _set_embedding_model(model_name)

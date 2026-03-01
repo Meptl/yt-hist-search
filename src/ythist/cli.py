@@ -5,7 +5,7 @@ from pathlib import Path
 
 import uvicorn
 
-from ythist.indexing import DEFAULT_INDEX_DIR, ingest_directory, ingest_documents, search
+from ythist.indexing import DEFAULT_INDEX_DIR, ingest_documents, search
 from ythist.takeout import (
     parse_watch_history_html,
     to_llama_documents,
@@ -24,14 +24,6 @@ def _build_parser() -> argparse.ArgumentParser:
     init_cmd = sub.add_parser("init", help="Create local app directories")
     init_cmd.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR))
     init_cmd.add_argument("--data-dir", default="dev_assets/data")
-
-    ingest_cmd = sub.add_parser("ingest", help="Ingest documents into local index")
-    ingest_cmd.add_argument("data_dir", help="Path to dataset directory")
-    ingest_cmd.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR))
-    ingest_cmd.add_argument("--recursive", action="store_true", default=True)
-    ingest_cmd.add_argument(
-        "--no-recursive", dest="recursive", action="store_false"
-    )
 
     import_takeout_cmd = sub.add_parser(
         "import-takeout",
@@ -67,16 +59,6 @@ def _cmd_init(args: argparse.Namespace) -> None:
     Path(args.index_dir).mkdir(parents=True, exist_ok=True)
     Path(args.data_dir).mkdir(parents=True, exist_ok=True)
     print(f"Initialized directories:\n- {args.index_dir}\n- {args.data_dir}")
-
-
-def _cmd_ingest(args: argparse.Namespace) -> None:
-    count = ingest_directory(
-        data_dir=Path(args.data_dir),
-        index_dir=Path(args.index_dir),
-        recursive=args.recursive,
-    )
-    print(f"Indexed {count} documents into {args.index_dir}")
-
 
 def _cmd_search(args: argparse.Namespace) -> None:
     hits = search(
@@ -136,8 +118,6 @@ def main() -> None:
 
     if args.command == "init":
         _cmd_init(args)
-    elif args.command == "ingest":
-        _cmd_ingest(args)
     elif args.command == "search":
         _cmd_search(args)
     elif args.command == "import-takeout":
