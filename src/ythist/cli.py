@@ -48,7 +48,9 @@ def _build_parser() -> argparse.ArgumentParser:
     search_cmd.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR))
     search_cmd.add_argument("--top-k", type=int, default=5)
 
-    serve_cmd = sub.add_parser("serve", help="Start local FastAPI server")
+    serve_cmd = sub.add_parser(
+        "serve", help="Start local FastAPI server (and serve built frontend if present)"
+    )
     serve_cmd.add_argument("--host", default="127.0.0.1")
     serve_cmd.add_argument("--port", type=int, default=8000)
 

@@ -2,7 +2,8 @@
 
 This repo is initialized as a local LlamaIndex app with:
 - CLI for `init`, `import-takeout`, `search`, `serve`
-- FastAPI server (`/health`, `/search`)
+- FastAPI server (`/health`, `/search`, `/api/search`)
+- React + Vite frontend in `frontend/` (served by FastAPI after build)
 - Local persistent index under `dev_assets/index`
 
 The implementation follows LlamaIndex usage from:
@@ -58,6 +59,34 @@ Then use:
 ```bash
 curl http://127.0.0.1:8000/health
 curl "http://127.0.0.1:8000/search?q=python%20videos&top_k=5"
+curl "http://127.0.0.1:8000/api/search?q=python%20videos&top_k=5"
+```
+
+## 6. Frontend setup
+
+Install frontend dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+Run frontend dev server (proxies API calls to `127.0.0.1:8000`):
+
+```bash
+npm run dev
+```
+
+Build frontend for local FastAPI serving:
+
+```bash
+npm run build
+```
+
+After build, run `ythist serve` and open:
+
+```text
+http://127.0.0.1:8000
 ```
 
 ## Notes
