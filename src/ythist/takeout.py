@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -146,10 +145,3 @@ def write_csv(entries: list[WatchEntry], output_path: Path) -> None:
         writer.writeheader()
         for row in entries:
             writer.writerow(row.__dict__)
-
-
-def write_jsonl(entries: list[WatchEntry], output_path: Path) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8") as f:
-        for row in entries:
-            f.write(json.dumps(row.__dict__, ensure_ascii=False) + "\n")

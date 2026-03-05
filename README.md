@@ -33,10 +33,9 @@ ythist import-takeout watch-history.html
 This command:
 - Parses every watched video entry from Takeout HTML
 - Writes CSV to `dev_assets/data/youtube_watch_history.csv`
-- Writes JSONL to `dev_assets/data/youtube_watch_history.jsonl`
 - Builds the vector index in `dev_assets/index`
 
-If you only want CSV/JSONL export without indexing:
+If you only want CSV export without indexing:
 
 ```bash
 ythist import-takeout watch-history.html --skip-index

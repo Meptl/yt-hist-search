@@ -10,7 +10,6 @@ from ythist.takeout import (
     parse_watch_history_html,
     to_llama_documents,
     write_csv,
-    write_jsonl,
 )
 
 
@@ -35,12 +34,9 @@ def _build_parser() -> argparse.ArgumentParser:
         "--csv-out", default="dev_assets/data/youtube_watch_history.csv"
     )
     import_takeout_cmd.add_argument(
-        "--jsonl-out", default="dev_assets/data/youtube_watch_history.jsonl"
-    )
-    import_takeout_cmd.add_argument(
         "--skip-index",
         action="store_true",
-        help="Only export CSV/JSONL and do not build vector index",
+        help="Only export CSV and do not build vector index",
     )
 
     search_cmd = sub.add_parser("search", help="Run semantic search")
@@ -87,13 +83,10 @@ def _cmd_import_takeout(args: argparse.Namespace) -> None:
         raise ValueError(f"No watch entries found in {html_path}")
 
     csv_out = Path(args.csv_out)
-    jsonl_out = Path(args.jsonl_out)
     write_csv(entries, csv_out)
-    write_jsonl(entries, jsonl_out)
 
     print(f"Parsed {len(entries)} entries from {html_path}")
     print(f"Wrote CSV: {csv_out}")
-    print(f"Wrote JSONL: {jsonl_out}")
 
     if args.skip_index:
         return
