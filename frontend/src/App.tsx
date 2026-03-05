@@ -15,7 +15,6 @@ type ImportResponse = {
   parsed_entries: number;
   indexed_entries: number;
   csv_out: string;
-  jsonl_out: string;
   index_dir: string;
 };
 

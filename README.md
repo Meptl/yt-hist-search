@@ -120,7 +120,7 @@ pnpm start
 
 The FastAPI service now supports frontend-driven import/index:
 - `POST /api/init` creates local app directories
-- `POST /api/import-takeout` accepts uploaded `watch-history.html`, exports CSV/JSONL, and builds index
+- `POST /api/import-takeout` accepts uploaded `watch-history.html`, exports CSV, and builds index
 - `GET /api/search` runs semantic retrieval
 
 ## Notes

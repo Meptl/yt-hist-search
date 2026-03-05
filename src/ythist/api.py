@@ -14,7 +14,6 @@ from ythist.takeout import (
     parse_watch_history_html,
     to_llama_documents,
     write_csv,
-    write_jsonl,
 )
 
 app = FastAPI(title="yt-hist", version="0.1.0")
@@ -35,7 +34,6 @@ class ImportTakeoutResponse(BaseModel):
     parsed_entries: int
     indexed_entries: int
     csv_out: str
-    jsonl_out: str
     index_dir: str
 
 
@@ -115,9 +113,7 @@ async def import_takeout_api_endpoint(
             )
 
         csv_out = data_path / "youtube_watch_history.csv"
-        jsonl_out = data_path / "youtube_watch_history.jsonl"
         write_csv(entries, csv_out)
-        write_jsonl(entries, jsonl_out)
 
         indexed_entries = 0
         if not skip_index:
@@ -137,7 +133,6 @@ async def import_takeout_api_endpoint(
             parsed_entries=len(entries),
             indexed_entries=indexed_entries,
             csv_out=str(csv_out),
-            jsonl_out=str(jsonl_out),
             index_dir=str(index_path),
         )
     finally:
