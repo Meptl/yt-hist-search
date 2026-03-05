@@ -78,5 +78,5 @@ def frontend_app(full_path: str) -> FileResponse:
         return FileResponse(index_file)
     raise HTTPException(
         status_code=404,
-        detail="Frontend build not found. Run `npm run build` in ./frontend.",
+        detail="Frontend build not found. Run `pnpm build` in ./frontend.",
     )

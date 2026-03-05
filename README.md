@@ -68,19 +68,19 @@ Install frontend dependencies:
 
 ```bash
 cd frontend
-npm install
+pnpm install
 ```
 
 Run frontend dev server (proxies API calls to `127.0.0.1:8000`):
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Build frontend for local FastAPI serving:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 After build, run `ythist serve` and open:
