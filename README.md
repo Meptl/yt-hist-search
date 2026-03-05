@@ -4,6 +4,7 @@ This repo is initialized as a local LlamaIndex app with:
 - CLI for `init`, `import-takeout`, `search`, `serve`
 - FastAPI server (`/health`, `/search`, `/api/search`)
 - React + Vite frontend in `frontend/` (served by FastAPI after build)
+- Electron desktop shell that auto-starts the Python backend
 - Local persistent index under `dev_assets/index`
 
 The implementation follows LlamaIndex usage from:
@@ -87,6 +88,40 @@ After build, run `ythist serve` and open:
 ```text
 http://127.0.0.1:8000
 ```
+
+## 7. Electron desktop app
+
+Install Node dependencies:
+
+```bash
+pnpm install
+pnpm --dir frontend install
+```
+
+Run desktop app in development mode:
+
+```bash
+pnpm dev
+```
+
+This starts:
+- Vite dev server (`http://127.0.0.1:5173`)
+- Electron shell
+- Python backend automatically (via `.venv/bin/ythist serve` or `uv run ythist serve`)
+
+Run desktop app against built frontend:
+
+```bash
+pnpm build:frontend
+pnpm start
+```
+
+## 8. Backend API for full workflow
+
+The FastAPI service now supports frontend-driven import/index:
+- `POST /api/init` creates local app directories
+- `POST /api/import-takeout` accepts uploaded `watch-history.html`, exports CSV/JSONL, and builds index
+- `GET /api/search` runs semantic retrieval
 
 ## Notes
 

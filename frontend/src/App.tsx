@@ -11,12 +11,23 @@ type SearchResponse = {
   results: SearchResponseItem[];
 };
 
+type ImportResponse = {
+  parsed_entries: number;
+  indexed_entries: number;
+  csv_out: string;
+  jsonl_out: string;
+  index_dir: string;
+};
+
 function extractVideoUrl(text: string): string | null {
   const match = text.match(/Video URL:\s*(https?:\/\/\S+)/i);
   return match ? match[1] : null;
 }
 
 export function App() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
   const [query, setQuery] = useState('videos about retrieval and embeddings');
   const [topK, setTopK] = useState(5);
   const [loading, setLoading] = useState(false);
@@ -63,6 +74,46 @@ export function App() {
     }
   }
 
+  async function onImport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedFile) {
+      setImportStatus('Choose your Google Takeout watch-history HTML file first.');
+      return;
+    }
+
+    setImporting(true);
+    setImportStatus(null);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('skip_index', 'false');
+
+      const response = await fetch('/api/import-takeout', {
+        method: 'POST',
+        body: formData
+      });
+      const payload = (await response.json()) as ImportResponse | { detail: string };
+
+      if (!response.ok) {
+        const detail = 'detail' in payload ? payload.detail : 'Import request failed';
+        throw new Error(detail);
+      }
+
+      const details = payload as ImportResponse;
+      setImportStatus(
+        `Imported ${details.parsed_entries} entries and indexed ${details.indexed_entries}.`
+      );
+    } catch (err) {
+      setImportStatus(
+        err instanceof Error ? err.message : 'Unexpected error while importing takeout'
+      );
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <div className="page">
       <div className="gradient" aria-hidden />
@@ -75,6 +126,22 @@ export function App() {
             then query naturally.
           </p>
         </header>
+
+        <form className="query-panel" onSubmit={onImport}>
+          <label htmlFor="takeout-file">Takeout file</label>
+          <input
+            id="takeout-file"
+            type="file"
+            accept=".html,text/html"
+            onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+          />
+          <div className="controls">
+            <button type="submit" disabled={importing}>
+              {importing ? 'Importing and indexing...' : 'Import & Index'}
+            </button>
+            <span>{importStatus ?? 'Upload watch-history.html to build your local index.'}</span>
+          </div>
+        </form>
 
         <form className="query-panel" onSubmit={onSubmit}>
           <label htmlFor="query">Search query</label>
@@ -135,11 +202,7 @@ export function App() {
             </ul>
           ) : (
             <div className="empty-state">
-              <p>
-                No results yet. If this is your first run, import and index your Takeout
-                file via CLI, then try a query.
-              </p>
-              <pre>{`ythist import-takeout watch-history.html\nythist serve`}</pre>
+              <p>No results yet. Import your Takeout file above, then run a query.</p>
             </div>
           )}
         </section>

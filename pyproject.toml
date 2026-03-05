@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115.0",
   "uvicorn>=0.30.0",
+  "python-multipart>=0.0.9",
   "fastembed>=0.3.0",
   "llama-index-core>=0.11.0",
   "llama-index-embeddings-fastembed>=0.2.0",
