@@ -116,3 +116,16 @@ def search(
             )
         )
     return hits
+
+
+def warmup(
+    index_dir: Path = DEFAULT_INDEX_DIR,
+    model_name: str = DEFAULT_EMBED_MODEL,
+) -> bool:
+    """Warm embedding and, when available, preload the persisted index."""
+    _set_embedding_model(model_name)
+    if not index_dir.exists():
+        return False
+
+    _get_cached_index(index_dir, model_name)
+    return True

@@ -127,4 +127,5 @@ The FastAPI service now supports frontend-driven import/index:
 
 - Embeddings use `FastEmbed` with model `BAAI/bge-small-en-v1.5`.
 - The first run downloads embedding model files (one-time internet access required).
+- On backend startup, embedding warmup begins automatically so first query latency is reduced.
 - Re-running `import-takeout` rebuilds the persisted index in `dev_assets/index`.

@@ -3,13 +3,19 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
+from threading import Thread
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from ythist.indexing import DEFAULT_INDEX_DIR, ingest_documents, search
+from ythist.indexing import (
+    DEFAULT_INDEX_DIR,
+    ingest_documents,
+    search,
+    warmup,
+)
 from ythist.takeout import (
     parse_watch_history_html,
     to_llama_documents,
@@ -46,6 +52,16 @@ def _frontend_dist_dir() -> Path:
         if candidate.exists():
             return candidate
     return candidates[0]
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    thread = Thread(
+        target=warmup,
+        kwargs={"index_dir": DEFAULT_INDEX_DIR},
+        daemon=True,
+    )
+    thread.start()
 
 
 @app.get("/health")
