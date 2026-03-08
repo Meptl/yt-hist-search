@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from 'react';
 
 declare global {
   interface Window {
@@ -175,6 +175,13 @@ export function App() {
     }
   }
 
+  function onQueryKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && event.ctrlKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  }
+
   if (checkingIndex) {
     return (
       <div className="page">
@@ -238,6 +245,7 @@ export function App() {
             rows={3}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={onQueryKeyDown}
             placeholder="e.g. tutorials I watched about sqlite indexing"
           />
 
