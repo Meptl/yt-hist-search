@@ -1,4 +1,5 @@
 import { FormEvent, KeyboardEvent, useMemo, useState } from 'react';
+import { Cog } from 'lucide-react';
 import { YoutubeVideoCard } from '../components/YoutubeVideoCard';
 
 type SearchResponseItem = {
@@ -128,9 +129,7 @@ export function SearchPage({
               title="Settings"
               onClick={onOpenSettings}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M12 8.25A3.75 3.75 0 1 0 12 15.75A3.75 3.75 0 1 0 12 8.25ZM21 12L18.82 13.26L18.85 15.78L16.32 16.31L15.06 18.5L12.54 17.05L10.02 18.5L8.76 16.31L6.23 15.78L6.26 13.26L4.08 12L6.26 10.74L6.23 8.22L8.76 7.69L10.02 5.5L12.54 6.95L15.06 5.5L16.32 7.69L18.85 8.22L18.82 10.74L21 12Z" />
-              </svg>
+              <Cog aria-hidden="true" focusable="false" />
             </button>
           </div>
         </header>
