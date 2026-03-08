@@ -26,7 +26,7 @@ export function LlmBackendField({
 }: LlmBackendFieldProps) {
   return (
     <div className={compact ? 'settings-inline' : 'settings-block'}>
-      <label htmlFor={id}>Optional LLM backend</label>
+      <label htmlFor={id}>Optional LLM Router</label>
       <select
         id={id}
         value={value}

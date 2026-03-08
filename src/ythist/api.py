@@ -26,7 +26,7 @@ from ythist.takeout import (
     write_csv,
 )
 from ythist.settings import (
-    LLM_BACKEND_OPTIONS,
+    LLM_ROUTER_OPTIONS,
     load_settings,
     save_settings,
     settings_path,
@@ -68,17 +68,18 @@ class IndexStatusResponse(BaseModel):
     index_dir: str
 
 
-LLMBackend = Literal["codex", "claude", "gemini", "opencode"]
+LLMRouter = Literal["codex", "claude", "gemini", "opencode"]
 
 
 class SettingsResponse(BaseModel):
-    llm_backend: LLMBackend | None = None
-    llm_backend_options: list[LLMBackend]
+    llm_router: LLMRouter | None = None
+    llm_router_options: list[LLMRouter]
     settings_path: str
 
 
 class UpdateSettingsRequest(BaseModel):
-    llm_backend: LLMBackend | None = None
+    llm_router: LLMRouter | None = None
+    llm_backend: LLMRouter | None = None
 
 
 def _run_import_from_html_path(
@@ -159,18 +160,19 @@ def health() -> dict[str, str]:
 def get_settings_api_endpoint() -> SettingsResponse:
     settings = load_settings()
     return SettingsResponse(
-        llm_backend=settings["llm_backend"],
-        llm_backend_options=list(LLM_BACKEND_OPTIONS),
+        llm_router=settings["llm_router"],
+        llm_router_options=list(LLM_ROUTER_OPTIONS),
         settings_path=str(settings_path()),
     )
 
 
 @app.put("/api/settings", response_model=SettingsResponse)
 def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResponse:
-    settings = save_settings(llm_backend=payload.llm_backend)
+    selected_router = payload.llm_router if payload.llm_router is not None else payload.llm_backend
+    settings = save_settings(llm_router=selected_router)
     return SettingsResponse(
-        llm_backend=settings["llm_backend"],
-        llm_backend_options=list(LLM_BACKEND_OPTIONS),
+        llm_router=settings["llm_router"],
+        llm_router_options=list(LLM_ROUTER_OPTIONS),
         settings_path=str(settings_path()),
     )
 

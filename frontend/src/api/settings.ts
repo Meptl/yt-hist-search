@@ -1,8 +1,8 @@
 export type LLMBackend = 'codex' | 'claude' | 'gemini' | 'opencode';
 
 export type SettingsResponse = {
-  llm_backend: LLMBackend | null;
-  llm_backend_options: LLMBackend[];
+  llm_router: LLMBackend | null;
+  llm_router_options: LLMBackend[];
   settings_path: string;
 };
 
@@ -25,7 +25,7 @@ export async function updateSettings(llmBackend: LLMBackend | null): Promise<Set
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      llm_backend: llmBackend
+      llm_router: llmBackend
     })
   });
 

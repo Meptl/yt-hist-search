@@ -30,7 +30,7 @@ export function SettingsPage({
           <p className="kicker">Local-first YouTube intelligence</p>
           <h1>Settings</h1>
           <p className="subtitle">
-            LLM backend is optional and enables richer query understanding, including date-aware
+            LLM Router is optional and enables richer query understanding, including date-aware
             filtering.
           </p>
         </header>

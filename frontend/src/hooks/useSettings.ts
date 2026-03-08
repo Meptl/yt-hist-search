@@ -19,8 +19,8 @@ export function useSettings() {
   ]);
 
   const applySettings = useCallback((settings: SettingsResponse) => {
-    setLlmBackendState(settings.llm_backend ?? 'none');
-    setLlmBackendOptions(settings.llm_backend_options);
+    setLlmBackendState(settings.llm_router ?? 'none');
+    setLlmBackendOptions(settings.llm_router_options);
     setSettingsPath(settings.settings_path);
   }, []);
 
@@ -68,9 +68,9 @@ export function useSettings() {
       }
       applySettings(saved);
       setSettingsMessage(
-        saved.llm_backend
-          ? `Saved optional LLM backend: ${saved.llm_backend}.`
-          : 'Saved. LLM backend is not configured.'
+        saved.llm_router
+          ? `Saved optional LLM Router: ${saved.llm_router}.`
+          : 'Saved. LLM Router is not configured.'
       );
     } catch (err) {
       if (requestId !== saveRequestIdRef.current) {
