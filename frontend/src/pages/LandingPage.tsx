@@ -31,7 +31,6 @@ export function LandingPage({
     <div className="page">
       <main className="app-shell">
         <section className="landing-panel">
-          <p className="kicker">Local-first YouTube intelligence</p>
           <h1>Import your Takeout history to begin</h1>
           <p className="subtitle">
             Select your Google Takeout <code>watch-history.html</code> file to start embedding and

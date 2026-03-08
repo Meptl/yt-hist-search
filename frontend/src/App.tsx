@@ -136,7 +136,6 @@ export function App() {
       <div className="page">
         <main className="app-shell">
           <section className="landing-panel">
-            <p className="kicker">Local-first YouTube intelligence</p>
             <h1>Checking index status...</h1>
           </section>
         </main>

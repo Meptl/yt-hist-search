@@ -27,7 +27,6 @@ export function SettingsPage({
     <div className="page">
       <main className="app-shell">
         <header className="hero">
-          <p className="kicker">Local-first YouTube intelligence</p>
           <h1>Settings</h1>
           <p className="subtitle">
             LLM Router is optional and enables richer query understanding, including date-aware
