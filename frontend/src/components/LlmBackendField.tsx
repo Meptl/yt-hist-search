@@ -26,7 +26,7 @@ export function LlmBackendField({
 }: LlmBackendFieldProps) {
   return (
     <div className={compact ? 'settings-inline' : 'settings-block'}>
-      <label htmlFor={id}>Optional LLM Router</label>
+      <label htmlFor={id}>LLM Router (optional)</label>
       <select
         id={id}
         value={value}
@@ -42,7 +42,7 @@ export function LlmBackendField({
       </select>
 
       <p className="status-line">
-        Optional. Configure this to enable more sophisticated query handling, such as date
+        Configure this to enable more sophisticated query handling, such as date
         filtering.
       </p>
 
