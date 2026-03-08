@@ -16,6 +16,8 @@ from llama_index.embeddings.fastembed import FastEmbedEmbedding
 
 DEFAULT_INDEX_DIR = Path("dev_assets/index")
 DEFAULT_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
+DEFAULT_SCORE_THRESHOLD = 0.55
+DEFAULT_RETRIEVAL_CANDIDATE_K = 50
 _CACHE_LOCK = Lock()
 _EMBED_MODELS: dict[str, FastEmbedEmbedding] = {}
 _INDEXES: dict[tuple[str, str], VectorStoreIndex] = {}
@@ -103,7 +105,8 @@ def search(
     query: str,
     index_dir: Path = DEFAULT_INDEX_DIR,
     model_name: str = DEFAULT_EMBED_MODEL,
-    top_k: int = 5,
+    score_threshold: float = DEFAULT_SCORE_THRESHOLD,
+    retrieval_candidate_k: int = DEFAULT_RETRIEVAL_CANDIDATE_K,
 ) -> list[SearchHit]:
     if not index_dir.exists():
         raise FileNotFoundError(
@@ -112,11 +115,14 @@ def search(
 
     _set_embedding_model(model_name)
     index = _get_cached_index(index_dir, model_name)
-    retriever = index.as_retriever(similarity_top_k=top_k)
+    retriever = index.as_retriever(similarity_top_k=retrieval_candidate_k)
     nodes = retriever.retrieve(query)
 
     hits: list[SearchHit] = []
     for node in nodes:
+        score = node.score
+        if score is None or score < score_threshold:
+            continue
         metadata = node.metadata or {}
         file_path = str(
             metadata.get("file_path")
@@ -126,7 +132,7 @@ def search(
         )
         hits.append(
             SearchHit(
-                score=node.score,
+                score=score,
                 file_path=file_path,
                 text=node.text,
             )

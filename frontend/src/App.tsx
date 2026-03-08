@@ -54,7 +54,7 @@ export function App() {
   const [lastImportedPath, setLastImportedPath] = useState<string | null>(null);
 
   const [query, setQuery] = useState('videos about retrieval and embeddings');
-  const [topK, setTopK] = useState(5);
+  const [scoreThreshold, setScoreThreshold] = useState(0.55);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResponseItem[]>([]);
@@ -167,7 +167,10 @@ export function App() {
     setError(null);
 
     try {
-      const params = new URLSearchParams({ q: trimmed, top_k: String(topK) });
+      const params = new URLSearchParams({
+        q: trimmed,
+        score_threshold: String(scoreThreshold)
+      });
       const response = await fetch(`/api/search?${params.toString()}`);
       const payload = (await response.json()) as SearchResponse | { detail: string };
 
@@ -260,14 +263,15 @@ export function App() {
           />
 
           <div className="controls">
-            <label htmlFor="top-k">Top K: {topK}</label>
+            <label htmlFor="score-threshold">Score threshold: {scoreThreshold.toFixed(2)}</label>
             <input
-              id="top-k"
+              id="score-threshold"
               type="range"
-              min={1}
-              max={20}
-              value={topK}
-              onChange={(event) => setTopK(Number(event.target.value))}
+              min={0}
+              max={1}
+              step={0.01}
+              value={scoreThreshold}
+              onChange={(event) => setScoreThreshold(Number(event.target.value))}
             />
             <button type="submit" disabled={loading}>
               {loading ? 'Searching...' : 'Search History'}

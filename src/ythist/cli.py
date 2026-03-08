@@ -5,7 +5,12 @@ from pathlib import Path
 
 import uvicorn
 
-from ythist.indexing import DEFAULT_INDEX_DIR, ingest_documents, search
+from ythist.indexing import (
+    DEFAULT_INDEX_DIR,
+    DEFAULT_SCORE_THRESHOLD,
+    ingest_documents,
+    search,
+)
 from ythist.takeout import (
     parse_watch_history_html,
     to_llama_documents,
@@ -42,7 +47,11 @@ def _build_parser() -> argparse.ArgumentParser:
     search_cmd = sub.add_parser("search", help="Run semantic search")
     search_cmd.add_argument("query", help="Natural language search query")
     search_cmd.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR))
-    search_cmd.add_argument("--top-k", type=int, default=5)
+    search_cmd.add_argument(
+        "--score-threshold",
+        type=float,
+        default=DEFAULT_SCORE_THRESHOLD,
+    )
 
     serve_cmd = sub.add_parser(
         "serve", help="Start local FastAPI server (and serve built frontend if present)"
@@ -62,7 +71,7 @@ def _cmd_search(args: argparse.Namespace) -> None:
     hits = search(
         query=args.query,
         index_dir=Path(args.index_dir),
-        top_k=args.top_k,
+        score_threshold=args.score_threshold,
     )
     if not hits:
         print("No matches found.")

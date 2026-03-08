@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from ythist.indexing import (
     DEFAULT_INDEX_DIR,
+    DEFAULT_SCORE_THRESHOLD,
     index_ready,
     ingest_documents,
     search,
@@ -139,11 +140,15 @@ def index_status_api_endpoint(
 @app.get("/api/search")
 def search_api_endpoint(
     q: str,
-    top_k: int = 5,
+    score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     index_dir: str = str(DEFAULT_INDEX_DIR),
 ) -> dict[str, list[SearchResponseItem] | str]:
     try:
-        hits = search(query=q, index_dir=Path(index_dir), top_k=top_k)
+        hits = search(
+            query=q,
+            index_dir=Path(index_dir),
+            score_threshold=score_threshold,
+        )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -214,10 +219,14 @@ def import_takeout_path_api_endpoint(
 @app.get("/search")
 def search_endpoint(
     q: str,
-    top_k: int = 5,
+    score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     index_dir: str = str(DEFAULT_INDEX_DIR),
 ) -> dict[str, list[SearchResponseItem] | str]:
-    return search_api_endpoint(q=q, top_k=top_k, index_dir=index_dir)
+    return search_api_endpoint(
+        q=q,
+        score_threshold=score_threshold,
+        index_dir=index_dir,
+    )
 
 
 _DIST_DIR = _frontend_dist_dir()
