@@ -40,8 +40,14 @@ body {
 .hero-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem;
+}
+
+.app-title {
+  margin: 0;
+  line-height: 1;
+  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
 }
 
 .landing-panel {
@@ -168,17 +174,18 @@ body {
 }
 
 .icon-button {
-  border: 1px solid var(--edge);
+  border: 0;
   border-radius: 12px;
   width: 44px;
   height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
+  background: transparent;
   color: var(--ink);
   cursor: pointer;
   flex-shrink: 0;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .icon-actions {
@@ -195,7 +202,20 @@ body {
 .icon-button svg {
   width: 22px;
   height: 22px;
-  fill: currentColor;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.icon-button:hover:not(:disabled),
+.icon-button:focus-visible {
+  background: color-mix(in srgb, var(--accent) 15%, #ffffff 85%);
+  color: var(--accent);
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, #ffffff 35%);
+  outline-offset: 2px;
 }
 
 .settings-block {

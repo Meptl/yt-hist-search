@@ -114,13 +114,7 @@ export function SearchPage({
       <main className="app-shell">
         <header className="hero">
           <div className="hero-top">
-            <div>
-              <p className="kicker">Local-first YouTube intelligence</p>
-              <h1>Search your watch history with semantic retrieval</h1>
-              <p className="subtitle">This interface talks to your local FastAPI service.</p>
-              {importStatus ? <p className="status-line">{importStatus}</p> : null}
-              {lastImportedPath ? <p className="status-line mono">{lastImportedPath}</p> : null}
-            </div>
+            <h1 className="app-title">yt-hist</h1>
             <div className="icon-actions">
               <button
                 type="button"
@@ -143,6 +137,8 @@ export function SearchPage({
               </button>
             </div>
           </div>
+          {importStatus ? <p className="status-line">{importStatus}</p> : null}
+          {lastImportedPath ? <p className="status-line mono">{lastImportedPath}</p> : null}
         </header>
 
         <form className="query-panel" onSubmit={onSubmit}>
