@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from threading import Lock
+from threading import Event, Lock
 from typing import Iterable
 
 from llama_index.core import (
@@ -21,6 +21,8 @@ DEFAULT_RETRIEVAL_CANDIDATE_K = 50
 _CACHE_LOCK = Lock()
 _EMBED_MODELS: dict[str, FastEmbedEmbedding] = {}
 _INDEXES: dict[tuple[str, str], VectorStoreIndex] = {}
+_INDEX_LOAD_EVENTS: dict[tuple[str, str], Event] = {}
+_INDEX_LOAD_ERRORS: dict[tuple[str, str], Exception] = {}
 _INDEX_MARKER_FILES = (
     "docstore.json",
     "index_store.json",
@@ -58,12 +60,43 @@ def _get_cached_index(index_dir: Path, model_name: str) -> VectorStoreIndex:
     key = _resolve_index_key(index_dir, model_name)
     with _CACHE_LOCK:
         cached = _INDEXES.get(key)
-    if cached is not None:
-        return cached
+        if cached is not None:
+            return cached
 
-    loaded = _load_index(index_dir)
+        load_event = _INDEX_LOAD_EVENTS.get(key)
+        should_load = load_event is None
+        if should_load:
+            load_event = Event()
+            _INDEX_LOAD_EVENTS[key] = load_event
+            _INDEX_LOAD_ERRORS.pop(key, None)
+
+    if should_load:
+        try:
+            loaded = _load_index(index_dir)
+        except Exception as exc:
+            with _CACHE_LOCK:
+                _INDEX_LOAD_ERRORS[key] = exc
+                _INDEX_LOAD_EVENTS.pop(key, None)
+                load_event.set()
+            raise
+
+        with _CACHE_LOCK:
+            cached = _INDEXES.setdefault(key, loaded)
+            _INDEX_LOAD_ERRORS.pop(key, None)
+            _INDEX_LOAD_EVENTS.pop(key, None)
+            load_event.set()
+            return cached
+
+    load_event.wait()
     with _CACHE_LOCK:
-        return _INDEXES.setdefault(key, loaded)
+        cached = _INDEXES.get(key)
+        if cached is not None:
+            return cached
+        load_error = _INDEX_LOAD_ERRORS.get(key)
+
+    if load_error is not None:
+        raise load_error
+    raise RuntimeError(f"Index load coordination failed for key: {key}")
 
 
 def _invalidate_cached_index(index_dir: Path) -> None:
@@ -72,6 +105,7 @@ def _invalidate_cached_index(index_dir: Path) -> None:
         stale_keys = [key for key in _INDEXES if key[0] == resolved]
         for key in stale_keys:
             del _INDEXES[key]
+            _INDEX_LOAD_ERRORS.pop(key, None)
 
 
 def index_ready(index_dir: Path = DEFAULT_INDEX_DIR) -> bool:

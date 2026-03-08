@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import logging
 from pathlib import Path
 from threading import Thread
 
@@ -25,6 +26,7 @@ from ythist.takeout import (
 )
 
 app = FastAPI(title="yt-hist", version="0.1.0")
+logger = logging.getLogger(__name__)
 
 
 class SearchResponseItem(BaseModel):
@@ -116,11 +118,13 @@ def _frontend_dist_dir() -> Path:
 
 @app.on_event("startup")
 def on_startup() -> None:
-    thread = Thread(
-        target=warmup,
-        kwargs={"index_dir": DEFAULT_INDEX_DIR},
-        daemon=True,
-    )
+    def _warmup_worker() -> None:
+        try:
+            warmup(index_dir=DEFAULT_INDEX_DIR)
+        except Exception:
+            logger.exception("Startup warmup failed")
+
+    thread = Thread(target=_warmup_worker, daemon=True)
     thread.start()
 
 
