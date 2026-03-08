@@ -1,5 +1,5 @@
 import { FormEvent, KeyboardEvent, useMemo, useState } from 'react';
-import { Cog } from 'lucide-react';
+import { Cog, Plus } from 'lucide-react';
 import { YoutubeVideoCard } from '../components/YoutubeVideoCard';
 
 type SearchResponseItem = {
@@ -111,7 +111,6 @@ export function SearchPage({
 
   return (
     <div className="page">
-      <div className="gradient" aria-hidden />
       <main className="app-shell">
         <header className="hero">
           <div className="hero-top">
@@ -122,25 +121,29 @@ export function SearchPage({
               {importStatus ? <p className="status-line">{importStatus}</p> : null}
               {lastImportedPath ? <p className="status-line mono">{lastImportedPath}</p> : null}
             </div>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Open settings"
-              title="Settings"
-              onClick={onOpenSettings}
-            >
-              <Cog aria-hidden="true" focusable="false" />
-            </button>
+            <div className="icon-actions">
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Import from file"
+                title="Import from file"
+                onClick={() => void onPickAndImport()}
+                disabled={importing}
+              >
+                <Plus aria-hidden="true" focusable="false" />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Open settings"
+                title="Settings"
+                onClick={onOpenSettings}
+              >
+                <Cog aria-hidden="true" focusable="false" />
+              </button>
+            </div>
           </div>
         </header>
-
-        <div className="query-panel">
-          <div className="controls">
-            <button type="button" onClick={() => void onPickAndImport()} disabled={importing}>
-              {importing ? 'Importing and indexing...' : 'Re-import from file'}
-            </button>
-          </div>
-        </div>
 
         <form className="query-panel" onSubmit={onSubmit}>
           <label htmlFor="query">Search query</label>

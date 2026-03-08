@@ -25,7 +25,6 @@ export function SettingsPage({
 }: SettingsPageProps) {
   return (
     <div className="page">
-      <div className="gradient" aria-hidden />
       <main className="app-shell">
         <header className="hero">
           <p className="kicker">Local-first YouTube intelligence</p>

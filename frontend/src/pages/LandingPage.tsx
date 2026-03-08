@@ -29,7 +29,6 @@ export function LandingPage({
 }: LandingPageProps) {
   return (
     <div className="page">
-      <div className="gradient" aria-hidden />
       <main className="app-shell">
         <section className="landing-panel">
           <p className="kicker">Local-first YouTube intelligence</p>

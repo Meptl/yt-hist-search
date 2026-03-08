@@ -2,13 +2,11 @@
 
 :root {
   --bg: #f2f4ea;
-  --panel: #fefdf8;
   --ink: #121410;
   --muted: #4e5a46;
   --edge: #cccfbf;
   --accent: #0f766e;
   --accent-2: #f59e0b;
-  --shadow: 0 20px 45px rgba(18, 20, 16, 0.12);
 }
 
 * {
@@ -24,39 +22,19 @@ body {
 
 .page {
   min-height: 100vh;
-  position: relative;
   padding: 3rem 1rem;
-}
-
-.gradient {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(circle at 18% 20%, rgba(245, 158, 11, 0.34), transparent 38%),
-    radial-gradient(circle at 85% 8%, rgba(15, 118, 110, 0.28), transparent 35%),
-    linear-gradient(170deg, #f2f4ea 0%, #edf1e6 65%, #e5ebdc 100%);
 }
 
 .app-shell {
   max-width: 980px;
   margin: 0 auto;
   display: grid;
-  gap: 1.25rem;
-}
-
-.hero,
-.landing-panel,
-.query-panel,
-.results-panel {
-  background: color-mix(in srgb, var(--panel) 88%, white 12%);
-  border: 1px solid var(--edge);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
+  gap: 1.4rem;
 }
 
 .hero {
-  padding: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--edge);
 }
 
 .hero-top {
@@ -67,7 +45,7 @@ body {
 }
 
 .landing-panel {
-  padding: 2rem 1.5rem;
+  padding-top: 0.5rem;
   display: grid;
   gap: 0.95rem;
 }
@@ -122,7 +100,7 @@ body {
 }
 
 .query-panel {
-  padding: 1.25rem;
+  padding: 0;
   display: grid;
   gap: 0.75rem;
 }
@@ -203,6 +181,17 @@ body {
   flex-shrink: 0;
 }
 
+.icon-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.icon-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .icon-button svg {
   width: 22px;
   height: 22px;
@@ -210,12 +199,9 @@ body {
 }
 
 .settings-block {
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  padding: 1rem;
+  padding: 0;
   display: grid;
   gap: 0.8rem;
-  background: #fffeff;
 }
 
 .settings-panel {
@@ -228,7 +214,7 @@ body {
 }
 
 .results-panel {
-  padding: 1.25rem;
+  padding-top: 0.25rem;
 }
 
 .results-header {
@@ -329,13 +315,6 @@ body {
 @media (max-width: 700px) {
   .page {
     padding-top: 1.5rem;
-  }
-
-  .hero,
-  .landing-panel,
-  .query-panel,
-  .results-panel {
-    border-radius: 14px;
   }
 
   .controls {
