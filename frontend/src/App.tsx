@@ -36,6 +36,16 @@ function extractVideoUrl(text: string): string | null {
   return match ? match[1] : null;
 }
 
+function decodeHtmlEntities(text: string): string {
+  if (typeof window === 'undefined' || !window.document) {
+    return text;
+  }
+
+  const textarea = window.document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
 export function App() {
   const [checkingIndex, setCheckingIndex] = useState(true);
   const [indexReady, setIndexReady] = useState(false);
@@ -275,6 +285,7 @@ export function App() {
             <ul className="results-list">
               {results.map((item, index) => {
                 const videoUrl = extractVideoUrl(item.text);
+                const decodedText = decodeHtmlEntities(item.text);
                 return (
                   <li key={`${item.file_path}-${index}`} className="result-card">
                     <div className="card-head">
@@ -283,7 +294,7 @@ export function App() {
                         score {typeof item.score === 'number' ? item.score.toFixed(4) : 'n/a'}
                       </span>
                     </div>
-                    <p>{item.text}</p>
+                    <p>{decodedText}</p>
                     <div className="card-foot">
                       <code>{item.file_path}</code>
                       {videoUrl ? (

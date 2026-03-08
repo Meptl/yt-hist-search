@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import html
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -47,6 +48,10 @@ def _normalize_whitespace(value: str) -> str:
     )
 
 
+def _decode_html_entities(value: str) -> str:
+    return html.unescape(value)
+
+
 def _extract_video_id(url: str) -> str:
     query = parse_qs(urlparse(url).query)
     return query.get("v", [""])[0]
@@ -73,8 +78,8 @@ def parse_watch_history_html(html_path: Path) -> list[WatchEntry]:
             continue
 
         video_url = match.group("url").strip()
-        title = _strip_tags(match.group("title"))
-        channel_name = _strip_tags(match.group("channel"))
+        title = _decode_html_entities(_strip_tags(match.group("title")))
+        channel_name = _decode_html_entities(_strip_tags(match.group("channel")))
         channel_url = match.group("channel_url").strip()
         watched_at_raw = _normalize_whitespace(_strip_tags(match.group("watched_at")))
         watched_at_iso = _parse_datetime(watched_at_raw)
