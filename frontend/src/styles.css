@@ -46,6 +46,7 @@ body {
 }
 
 .hero,
+.landing-panel,
 .query-panel,
 .results-panel {
   background: color-mix(in srgb, var(--panel) 88%, white 12%);
@@ -56,6 +57,29 @@ body {
 
 .hero {
   padding: 1.5rem;
+}
+
+.landing-panel {
+  padding: 2rem 1.5rem;
+  display: grid;
+  gap: 0.95rem;
+}
+
+.landing-panel button {
+  justify-self: flex-start;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #f7fff8;
+  background: linear-gradient(130deg, var(--accent), #115e59);
+  cursor: pointer;
+}
+
+.landing-panel button:disabled {
+  opacity: 0.7;
+  cursor: progress;
 }
 
 .kicker {
@@ -76,6 +100,18 @@ body {
   margin-top: 0.85rem;
   color: var(--muted);
   max-width: 70ch;
+}
+
+.status-line {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.status-line.mono {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .query-panel {
@@ -218,6 +254,7 @@ body {
   }
 
   .hero,
+  .landing-panel,
   .query-panel,
   .results-panel {
     border-radius: 14px;

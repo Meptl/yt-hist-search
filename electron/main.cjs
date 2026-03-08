@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -122,7 +122,8 @@ async function createWindow() {
     minHeight: 700,
     webPreferences: {
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.cjs')
     }
   });
 
@@ -130,6 +131,18 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  ipcMain.handle('ythist:pick-takeout-file', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Select Google Takeout watch-history.html',
+      properties: ['openFile'],
+      filters: [{ name: 'HTML', extensions: ['html', 'htm'] }]
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return result.filePaths[0];
+  });
+
   try {
     await createWindow();
   } catch (error) {

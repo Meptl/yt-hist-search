@@ -19,6 +19,12 @@ DEFAULT_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 _CACHE_LOCK = Lock()
 _EMBED_MODELS: dict[str, FastEmbedEmbedding] = {}
 _INDEXES: dict[tuple[str, str], VectorStoreIndex] = {}
+_INDEX_MARKER_FILES = (
+    "docstore.json",
+    "index_store.json",
+    "graph_store.json",
+    "vector_store.json",
+)
 
 
 @dataclass(frozen=True)
@@ -64,6 +70,16 @@ def _invalidate_cached_index(index_dir: Path) -> None:
         stale_keys = [key for key in _INDEXES if key[0] == resolved]
         for key in stale_keys:
             del _INDEXES[key]
+
+
+def index_ready(index_dir: Path = DEFAULT_INDEX_DIR) -> bool:
+    if not index_dir.exists() or not index_dir.is_dir():
+        return False
+
+    if any((index_dir / marker).exists() for marker in _INDEX_MARKER_FILES):
+        return True
+
+    return any(index_dir.iterdir())
 
 
 def ingest_documents(

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from ythist.indexing import (
     DEFAULT_INDEX_DIR,
+    index_ready,
     ingest_documents,
     search,
     warmup,
@@ -43,6 +44,64 @@ class ImportTakeoutResponse(BaseModel):
     index_dir: str
 
 
+class ImportTakeoutPathRequest(BaseModel):
+    html_path: str
+    index_dir: str = str(DEFAULT_INDEX_DIR)
+    data_dir: str = "dev_assets/data"
+    skip_index: bool = False
+
+
+class IndexStatusResponse(BaseModel):
+    index_ready: bool
+    index_dir: str
+
+
+def _run_import_from_html_path(
+    html_path: Path,
+    index_dir: Path,
+    data_dir: Path,
+    skip_index: bool,
+) -> ImportTakeoutResponse:
+    if not html_path.exists() or not html_path.is_file():
+        raise HTTPException(status_code=400, detail=f"File not found: {html_path}")
+    if html_path.suffix.lower() not in {".html", ".htm"}:
+        raise HTTPException(status_code=400, detail="Expected a .html/.htm takeout file")
+
+    data_dir.mkdir(parents=True, exist_ok=True)
+    index_dir.mkdir(parents=True, exist_ok=True)
+
+    entries = parse_watch_history_html(html_path)
+    if not entries:
+        raise HTTPException(
+            status_code=400,
+            detail="No watch entries found in the provided takeout file.",
+        )
+
+    csv_out = data_dir / "youtube_watch_history.csv"
+    write_csv(entries, csv_out)
+
+    indexed_entries = 0
+    if not skip_index:
+        docs = to_llama_documents(entries)
+        try:
+            indexed_entries = ingest_documents(docs, index_dir=index_dir)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "Indexing failed. Ensure internet access is available once for "
+                    f"embedding model download. Original error: {exc}"
+                ),
+            ) from exc
+
+    return ImportTakeoutResponse(
+        parsed_entries=len(entries),
+        indexed_entries=indexed_entries,
+        csv_out=str(csv_out),
+        index_dir=str(index_dir),
+    )
+
+
 def _frontend_dist_dir() -> Path:
     candidates = [
         Path("frontend/dist"),
@@ -67,6 +126,14 @@ def on_startup() -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/index-status", response_model=IndexStatusResponse)
+def index_status_api_endpoint(
+    index_dir: str = str(DEFAULT_INDEX_DIR),
+) -> IndexStatusResponse:
+    index_path = Path(index_dir)
+    return IndexStatusResponse(index_ready=index_ready(index_path), index_dir=str(index_path))
 
 
 @app.get("/api/search")
@@ -107,13 +174,11 @@ async def import_takeout_api_endpoint(
     skip_index: bool = Form(False),
 ) -> ImportTakeoutResponse:
     file_name = Path(file.filename or "watch-history.html").name
-    if not file_name.lower().endswith(".html"):
-        raise HTTPException(status_code=400, detail="Expected a .html takeout file")
+    if not file_name.lower().endswith((".html", ".htm")):
+        raise HTTPException(status_code=400, detail="Expected a .html/.htm takeout file")
 
     data_path = Path(data_dir)
-    data_path.mkdir(parents=True, exist_ok=True)
     index_path = Path(index_dir)
-    index_path.mkdir(parents=True, exist_ok=True)
 
     with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
         temp_file_path = Path(tmp.name)
@@ -121,41 +186,29 @@ async def import_takeout_api_endpoint(
         tmp.write(content)
 
     try:
-        entries = parse_watch_history_html(temp_file_path)
-        if not entries:
-            raise HTTPException(
-                status_code=400,
-                detail="No watch entries found in uploaded takeout file.",
-            )
-
-        csv_out = data_path / "youtube_watch_history.csv"
-        write_csv(entries, csv_out)
-
-        indexed_entries = 0
-        if not skip_index:
-            docs = to_llama_documents(entries)
-            try:
-                indexed_entries = ingest_documents(docs, index_dir=index_path)
-            except Exception as exc:
-                raise HTTPException(
-                    status_code=500,
-                    detail=(
-                        "Indexing failed. Ensure internet access is available once for "
-                        f"embedding model download. Original error: {exc}"
-                    ),
-                ) from exc
-
-        return ImportTakeoutResponse(
-            parsed_entries=len(entries),
-            indexed_entries=indexed_entries,
-            csv_out=str(csv_out),
-            index_dir=str(index_path),
+        return _run_import_from_html_path(
+            html_path=temp_file_path,
+            index_dir=index_path,
+            data_dir=data_path,
+            skip_index=skip_index,
         )
     finally:
         try:
             os.remove(temp_file_path)
         except OSError:
             pass
+
+
+@app.post("/api/import-takeout-path", response_model=ImportTakeoutResponse)
+def import_takeout_path_api_endpoint(
+    payload: ImportTakeoutPathRequest,
+) -> ImportTakeoutResponse:
+    return _run_import_from_html_path(
+        html_path=Path(payload.html_path),
+        index_dir=Path(payload.index_dir),
+        data_dir=Path(payload.data_dir),
+        skip_index=payload.skip_index,
+    )
 
 
 @app.get("/search")
