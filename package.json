@@ -5,7 +5,7 @@
   "description": "Electron shell for local yt-hist backend and frontend",
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "concurrently -k \"pnpm --dir frontend dev\" \"wait-on tcp:5173 && electron electron/main.cjs\"",
+    "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently -k \"pnpm --dir frontend dev\" \"wait-on tcp:$FRONTEND_PORT && electron electron/main.cjs\"",
     "start": "electron electron/main.cjs",
     "build:frontend": "pnpm --dir frontend build"
   },

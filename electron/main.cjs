@@ -4,8 +4,8 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 
-const BACKEND_HOST = process.env.YTHIST_BACKEND_HOST || '127.0.0.1';
-const BACKEND_PORT = Number(process.env.YTHIST_BACKEND_PORT || '8000');
+const BACKEND_HOST = process.env.BACKEND_HOST || process.env.YTHIST_BACKEND_HOST || '127.0.0.1';
+const BACKEND_PORT = Number(process.env.BACKEND_PORT || '8000');
 const IS_DEV = !app.isPackaged;
 
 let backendProcess = null;
@@ -16,7 +16,7 @@ function healthUrl() {
 
 function frontendUrl() {
   if (IS_DEV) {
-    return process.env.YTHIST_DEV_URL || 'http://127.0.0.1:5173';
+    return `http://127.0.0.1:${process.env.FRONTEND_PORT || '5173'}`;
   }
   return `http://${BACKEND_HOST}:${BACKEND_PORT}`;
 }
