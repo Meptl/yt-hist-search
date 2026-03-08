@@ -11,6 +11,7 @@ type LandingPageProps = {
   settingsSaving: boolean;
   settingsPath: string | null;
   settingsMessage: string | null;
+  llmRouterCliWarning: string | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onPickAndImport: () => Promise<void>;
 };
@@ -24,6 +25,7 @@ export function LandingPage({
   settingsSaving,
   settingsPath,
   settingsMessage,
+  llmRouterCliWarning,
   onSetLlmBackend,
   onPickAndImport
 }: LandingPageProps) {
@@ -45,6 +47,7 @@ export function LandingPage({
             saving={settingsSaving}
             settingsPath={settingsPath}
             settingsMessage={settingsMessage}
+            llmRouterCliWarning={llmRouterCliWarning}
             onChange={onSetLlmBackend}
           />
 

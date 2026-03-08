@@ -4,6 +4,7 @@ export type SettingsResponse = {
   llm_router: LLMBackend | null;
   llm_router_options: LLMBackend[];
   settings_path: string;
+  llm_router_cli_warning: string | null;
 };
 
 export async function fetchSettings(): Promise<SettingsResponse> {

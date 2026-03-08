@@ -9,6 +9,7 @@ type SettingsPageProps = {
   settingsSaving: boolean;
   settingsPath: string | null;
   settingsMessage: string | null;
+  llmRouterCliWarning: string | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onBack: () => void;
 };
@@ -20,6 +21,7 @@ export function SettingsPage({
   settingsSaving,
   settingsPath,
   settingsMessage,
+  llmRouterCliWarning,
   onSetLlmBackend,
   onBack
 }: SettingsPageProps) {
@@ -39,6 +41,7 @@ export function SettingsPage({
             saving={settingsSaving}
             settingsPath={settingsPath}
             settingsMessage={settingsMessage}
+            llmRouterCliWarning={llmRouterCliWarning}
             onChange={onSetLlmBackend}
             compact
           />

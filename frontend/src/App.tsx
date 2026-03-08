@@ -42,6 +42,7 @@ export function App() {
     settingsSaving,
     settingsPath,
     settingsMessage,
+    llmRouterCliWarning,
     setLlmBackend
   } = useSettings();
 
@@ -154,6 +155,7 @@ export function App() {
         settingsSaving={settingsSaving}
         settingsPath={settingsPath}
         settingsMessage={settingsMessage}
+        llmRouterCliWarning={llmRouterCliWarning}
         onSetLlmBackend={setLlmBackend}
         onPickAndImport={onPickAndImport}
       />
@@ -169,6 +171,7 @@ export function App() {
         settingsSaving={settingsSaving}
         settingsPath={settingsPath}
         settingsMessage={settingsMessage}
+        llmRouterCliWarning={llmRouterCliWarning}
         onSetLlmBackend={setLlmBackend}
         onBack={() => setViewMode('search')}
       />

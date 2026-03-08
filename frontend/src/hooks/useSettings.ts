@@ -9,6 +9,7 @@ export function useSettings() {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsPath, setSettingsPath] = useState<string | null>(null);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
+  const [llmRouterCliWarning, setLlmRouterCliWarning] = useState<string | null>(null);
   const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
   const saveRequestIdRef = useRef(0);
   const [llmBackendOptions, setLlmBackendOptions] = useState<LLMBackend[]>([
@@ -22,6 +23,7 @@ export function useSettings() {
     setLlmBackendState(settings.llm_router ?? 'none');
     setLlmBackendOptions(settings.llm_router_options);
     setSettingsPath(settings.settings_path);
+    setLlmRouterCliWarning(settings.llm_router_cli_warning);
   }, []);
 
   useEffect(() => {
@@ -99,6 +101,7 @@ export function useSettings() {
     settingsSaving,
     settingsPath,
     settingsMessage,
+    llmRouterCliWarning,
     setLlmBackend,
   };
 }

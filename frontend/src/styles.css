@@ -99,6 +99,10 @@ body {
   font-size: 0.9rem;
 }
 
+.warning-line {
+  color: #9a3412;
+}
+
 .status-line.mono {
   font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.78rem;

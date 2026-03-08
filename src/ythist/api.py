@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 import logging
+import shutil
 from pathlib import Path
 from threading import Thread
 
@@ -69,17 +70,38 @@ class IndexStatusResponse(BaseModel):
 
 
 LLMRouter = Literal["codex", "claude", "gemini", "opencode"]
+LLM_ROUTER_CLI_COMMANDS: dict[LLMRouter, str] = {
+    "codex": "codex",
+    "claude": "claude",
+    "gemini": "gemini",
+    "opencode": "opencode",
+}
 
 
 class SettingsResponse(BaseModel):
     llm_router: LLMRouter | None = None
     llm_router_options: list[LLMRouter]
     settings_path: str
+    llm_router_cli_warning: str | None = None
 
 
 class UpdateSettingsRequest(BaseModel):
     llm_router: LLMRouter | None = None
     llm_backend: LLMRouter | None = None
+
+
+def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
+    if llm_router is None:
+        return None
+
+    cli_command = LLM_ROUTER_CLI_COMMANDS[llm_router]
+    if shutil.which(cli_command) is not None:
+        return None
+
+    return (
+        f"`{cli_command}` CLI was not found in PATH. Install it or add it to PATH "
+        "to use this LLM Router."
+    )
 
 
 def _run_import_from_html_path(
@@ -159,10 +181,12 @@ def health() -> dict[str, str]:
 @app.get("/api/settings", response_model=SettingsResponse)
 def get_settings_api_endpoint() -> SettingsResponse:
     settings = load_settings()
+    llm_router = settings["llm_router"]
     return SettingsResponse(
-        llm_router=settings["llm_router"],
+        llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
         settings_path=str(settings_path()),
+        llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
 
 
@@ -170,10 +194,12 @@ def get_settings_api_endpoint() -> SettingsResponse:
 def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResponse:
     selected_router = payload.llm_router if payload.llm_router is not None else payload.llm_backend
     settings = save_settings(llm_router=selected_router)
+    llm_router = settings["llm_router"]
     return SettingsResponse(
-        llm_router=settings["llm_router"],
+        llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
         settings_path=str(settings_path()),
+        llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
 
 
