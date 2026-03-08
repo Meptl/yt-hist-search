@@ -28,10 +28,6 @@ export function SettingsPage({
       <main className="app-shell">
         <header className="hero">
           <h1>Settings</h1>
-          <p className="subtitle">
-            LLM Router is optional and enables richer query understanding, including date-aware
-            filtering.
-          </p>
         </header>
 
         <section className="query-panel settings-panel">
