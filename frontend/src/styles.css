@@ -258,6 +258,10 @@ body {
   font-size: 0.9rem;
 }
 
+.results-header span.error-summary {
+  color: #b91c1c;
+}
+
 .results-list {
   list-style: none;
   padding: 0;
@@ -322,6 +326,12 @@ body {
   color: var(--muted);
 }
 
+.empty-state.error-state {
+  border-color: #fecaca;
+  background: #fff5f5;
+  color: #7f1d1d;
+}
+
 .empty-state p {
   margin-top: 0;
 }
@@ -334,6 +344,15 @@ body {
   padding: 0.8rem;
   overflow-x: auto;
   font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.empty-state.error-state pre {
+  margin: 0;
+  color: #7f1d1d;
+  background: #ffe4e6;
+  border-color: #fecdd3;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 @media (max-width: 700px) {

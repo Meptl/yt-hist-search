@@ -15,6 +15,10 @@ type SearchResponse = {
   results: SearchResponseItem[];
 };
 
+type ErrorPayload = {
+  detail?: unknown;
+};
+
 type SearchPageProps = {
   importing: boolean;
   importStatus: string | null;
@@ -86,14 +90,39 @@ export function SearchPage({
         score_threshold: String(scoreThreshold)
       });
       const response = await fetch(`/api/search?${params.toString()}`);
-      const payload = (await response.json()) as SearchResponse | { detail: string };
+      const rawBody = await response.text();
+      const rawMessage = rawBody.trim();
+      let payload: SearchResponse | ErrorPayload | null = null;
 
-      if (!response.ok) {
-        const detail = 'detail' in payload ? payload.detail : 'Search request failed';
-        throw new Error(detail);
+      if (rawMessage) {
+        try {
+          payload = JSON.parse(rawMessage) as SearchResponse | ErrorPayload;
+        } catch {
+          payload = null;
+        }
       }
 
-      setResults((payload as SearchResponse).results);
+      if (!response.ok) {
+        if (payload && 'detail' in payload && payload.detail) {
+          const detail =
+            typeof payload.detail === 'string'
+              ? payload.detail
+              : JSON.stringify(payload.detail, null, 2);
+          throw new Error(detail);
+        }
+
+        if (rawMessage) {
+          throw new Error(rawMessage);
+        }
+
+        throw new Error('Search request failed');
+      }
+
+      if (!payload || !('results' in payload) || !Array.isArray(payload.results)) {
+        throw new Error(rawMessage || 'Unexpected response from search endpoint');
+      }
+
+      setResults(payload.results);
     } catch (err) {
       setResults([]);
       setError(err instanceof Error ? err.message : 'Unexpected error while searching');
@@ -172,7 +201,7 @@ export function SearchPage({
         <section className="results-panel" aria-live="polite">
           <div className="results-header">
             <h2>Results</h2>
-            <span>{summary}</span>
+            <span className={error ? 'error-summary' : undefined}>{summary}</span>
           </div>
 
           {hasResults ? (
@@ -194,8 +223,12 @@ export function SearchPage({
               })}
             </ul>
           ) : (
-            <div className="empty-state">
-              <p>No results yet. Run a query to search your indexed history.</p>
+            <div className={`empty-state${error ? ' error-state' : ''}`}>
+              {error ? (
+                <pre>{error}</pre>
+              ) : (
+                <p>No results yet. Run a query to search your indexed history.</p>
+              )}
             </div>
           )}
         </section>
