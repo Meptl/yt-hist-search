@@ -10,6 +10,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from typing import Literal
 
 from ythist.indexing import (
     DEFAULT_INDEX_DIR,
@@ -23,6 +24,12 @@ from ythist.takeout import (
     parse_watch_history_html,
     to_llama_documents,
     write_csv,
+)
+from ythist.settings import (
+    LLM_BACKEND_OPTIONS,
+    load_settings,
+    save_settings,
+    settings_path,
 )
 
 app = FastAPI(title="yt-hist", version="0.1.0")
@@ -59,6 +66,19 @@ class ImportTakeoutPathRequest(BaseModel):
 class IndexStatusResponse(BaseModel):
     index_ready: bool
     index_dir: str
+
+
+LLMBackend = Literal["codex", "claude", "gemini", "opencode"]
+
+
+class SettingsResponse(BaseModel):
+    llm_backend: LLMBackend | None = None
+    llm_backend_options: list[LLMBackend]
+    settings_path: str
+
+
+class UpdateSettingsRequest(BaseModel):
+    llm_backend: LLMBackend | None = None
 
 
 def _run_import_from_html_path(
@@ -133,6 +153,26 @@ def on_startup() -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/settings", response_model=SettingsResponse)
+def get_settings_api_endpoint() -> SettingsResponse:
+    settings = load_settings()
+    return SettingsResponse(
+        llm_backend=settings["llm_backend"],
+        llm_backend_options=list(LLM_BACKEND_OPTIONS),
+        settings_path=str(settings_path()),
+    )
+
+
+@app.put("/api/settings", response_model=SettingsResponse)
+def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResponse:
+    settings = save_settings(llm_backend=payload.llm_backend)
+    return SettingsResponse(
+        llm_backend=settings["llm_backend"],
+        llm_backend_options=list(LLM_BACKEND_OPTIONS),
+        settings_path=str(settings_path()),
+    )
 
 
 @app.get("/api/index-status", response_model=IndexStatusResponse)

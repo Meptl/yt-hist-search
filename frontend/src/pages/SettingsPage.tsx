@@ -1,0 +1,64 @@
+import { LlmBackendField } from '../components/LlmBackendField';
+import { type LLMBackend } from '../api/settings';
+import { type LLMBackendSelection } from '../hooks/useSettings';
+
+type SettingsPageProps = {
+  llmBackend: LLMBackendSelection;
+  llmBackendOptions: LLMBackend[];
+  settingsLoading: boolean;
+  settingsSaving: boolean;
+  settingsPath: string | null;
+  settingsMessage: string | null;
+  onSetLlmBackend: (next: LLMBackendSelection) => void;
+  onSaveSettings: () => Promise<void>;
+  onBack: () => void;
+};
+
+export function SettingsPage({
+  llmBackend,
+  llmBackendOptions,
+  settingsLoading,
+  settingsSaving,
+  settingsPath,
+  settingsMessage,
+  onSetLlmBackend,
+  onSaveSettings,
+  onBack
+}: SettingsPageProps) {
+  return (
+    <div className="page">
+      <div className="gradient" aria-hidden />
+      <main className="app-shell">
+        <header className="hero">
+          <p className="kicker">Local-first YouTube intelligence</p>
+          <h1>Settings</h1>
+          <p className="subtitle">
+            LLM backend is optional and enables richer query understanding, including date-aware
+            filtering.
+          </p>
+        </header>
+
+        <section className="query-panel settings-panel">
+          <LlmBackendField
+            id="settings-llm-backend"
+            value={llmBackend}
+            options={llmBackendOptions}
+            loading={settingsLoading}
+            saving={settingsSaving}
+            settingsPath={settingsPath}
+            settingsMessage={settingsMessage}
+            onChange={onSetLlmBackend}
+            onSave={onSaveSettings}
+            compact
+          />
+
+          <div className="controls">
+            <button type="button" className="secondary-button" onClick={onBack}>
+              Back to search
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

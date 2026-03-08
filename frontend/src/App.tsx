@@ -1,4 +1,9 @@
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { useSettings } from './hooks/useSettings';
+import { LandingPage } from './pages/LandingPage';
+import { SearchPage } from './pages/SearchPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 declare global {
   interface Window {
@@ -7,19 +12,6 @@ declare global {
     };
   }
 }
-
-type SearchResponseItem = {
-  score: number | null;
-  file_path: string;
-  text: string;
-  video_id?: string | null;
-  video_url?: string | null;
-};
-
-type SearchResponse = {
-  query: string;
-  results: SearchResponseItem[];
-};
 
 type ImportResponse = {
   parsed_entries: number;
@@ -33,28 +25,7 @@ type IndexStatusResponse = {
   index_dir: string;
 };
 
-function extractVideoUrl(text: string): string | null {
-  const match = text.match(/Video URL:\s*(https?:\/\/\S+)/i);
-  return match ? match[1] : null;
-}
-
-function buildThumbnailUrl(videoId: string | null): string | null {
-  if (!videoId) {
-    return null;
-  }
-
-  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-function decodeHtmlEntities(text: string): string {
-  if (typeof window === 'undefined' || !window.document) {
-    return text;
-  }
-
-  const textarea = window.document.createElement('textarea');
-  textarea.innerHTML = text;
-  return textarea.value;
-}
+type ViewMode = 'search' | 'settings';
 
 export function App() {
   const [checkingIndex, setCheckingIndex] = useState(true);
@@ -62,12 +33,18 @@ export function App() {
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [lastImportedPath, setLastImportedPath] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('search');
 
-  const [query, setQuery] = useState('videos about retrieval and embeddings');
-  const [scoreThreshold, setScoreThreshold] = useState(0.55);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<SearchResponseItem[]>([]);
+  const {
+    llmBackend,
+    llmBackendOptions,
+    settingsLoading,
+    settingsSaving,
+    settingsPath,
+    settingsMessage,
+    setLlmBackend,
+    saveSettings
+  } = useSettings();
 
   useEffect(() => {
     let isActive = true;
@@ -106,15 +83,6 @@ export function App() {
     };
   }, []);
 
-  const hasResults = results.length > 0;
-
-  const summary = useMemo(() => {
-    if (loading) return 'Searching your history...';
-    if (error) return error;
-    if (!hasResults) return 'Run a query to search your indexed watch history.';
-    return `${results.length} results`;
-  }, [error, hasResults, loading, results.length]);
-
   async function onPickAndImport() {
     if (!window.ythist?.pickTakeoutFile) {
       setImportStatus('Native file picker unavailable. Launch the UI via Electron.');
@@ -129,7 +97,6 @@ export function App() {
 
     setImporting(true);
     setImportStatus('Indexing started... this can take a few minutes.');
-    setError(null);
 
     try {
       const response = await fetch('/api/import-takeout-path', {
@@ -155,53 +122,13 @@ export function App() {
         `Imported ${details.parsed_entries} entries and indexed ${details.indexed_entries}.`
       );
       setIndexReady(true);
+      setViewMode('search');
     } catch (err) {
       setImportStatus(
         err instanceof Error ? err.message : 'Unexpected error while importing takeout'
       );
     } finally {
       setImporting(false);
-    }
-  }
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setError('Enter a query first.');
-      setResults([]);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        q: trimmed,
-        score_threshold: String(scoreThreshold)
-      });
-      const response = await fetch(`/api/search?${params.toString()}`);
-      const payload = (await response.json()) as SearchResponse | { detail: string };
-
-      if (!response.ok) {
-        const detail = 'detail' in payload ? payload.detail : 'Search request failed';
-        throw new Error(detail);
-      }
-
-      setResults((payload as SearchResponse).results);
-    } catch (err) {
-      setResults([]);
-      setError(err instanceof Error ? err.message : 'Unexpected error while searching');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function onQueryKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Enter' && event.ctrlKey) {
-      event.preventDefault();
-      event.currentTarget.form?.requestSubmit();
     }
   }
 
@@ -221,131 +148,45 @@ export function App() {
 
   if (!indexReady) {
     return (
-      <div className="page">
-        <div className="gradient" aria-hidden />
-        <main className="app-shell">
-          <section className="landing-panel">
-            <p className="kicker">Local-first YouTube intelligence</p>
-            <h1>Import your Takeout history to begin</h1>
-            <p className="subtitle">
-              Select your Google Takeout <code>watch-history.html</code> file to start embedding
-              and indexing.
-            </p>
-            <button type="button" onClick={() => void onPickAndImport()} disabled={importing}>
-              {importing ? 'Importing and indexing...' : 'Choose watch-history.html'}
-            </button>
-            <p className="status-line">{importStatus ?? 'No index detected yet.'}</p>
-          </section>
-        </main>
-      </div>
+      <LandingPage
+        importing={importing}
+        importStatus={importStatus}
+        llmBackend={llmBackend}
+        llmBackendOptions={llmBackendOptions}
+        settingsLoading={settingsLoading}
+        settingsSaving={settingsSaving}
+        settingsPath={settingsPath}
+        settingsMessage={settingsMessage}
+        onSetLlmBackend={setLlmBackend}
+        onSaveSettings={saveSettings}
+        onPickAndImport={onPickAndImport}
+      />
+    );
+  }
+
+  if (viewMode === 'settings') {
+    return (
+      <SettingsPage
+        llmBackend={llmBackend}
+        llmBackendOptions={llmBackendOptions}
+        settingsLoading={settingsLoading}
+        settingsSaving={settingsSaving}
+        settingsPath={settingsPath}
+        settingsMessage={settingsMessage}
+        onSetLlmBackend={setLlmBackend}
+        onSaveSettings={saveSettings}
+        onBack={() => setViewMode('search')}
+      />
     );
   }
 
   return (
-    <div className="page">
-      <div className="gradient" aria-hidden />
-      <main className="app-shell">
-        <header className="hero">
-          <p className="kicker">Local-first YouTube intelligence</p>
-          <h1>Search your watch history with semantic retrieval</h1>
-          <p className="subtitle">This interface talks to your local FastAPI service.</p>
-          {importStatus ? <p className="status-line">{importStatus}</p> : null}
-          {lastImportedPath ? <p className="status-line mono">{lastImportedPath}</p> : null}
-        </header>
-
-        <div className="query-panel">
-          <div className="controls">
-            <button type="button" onClick={() => void onPickAndImport()} disabled={importing}>
-              {importing ? 'Importing and indexing...' : 'Re-import from file'}
-            </button>
-          </div>
-        </div>
-
-        <form className="query-panel" onSubmit={onSubmit}>
-          <label htmlFor="query">Search query</label>
-          <textarea
-            id="query"
-            rows={3}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={onQueryKeyDown}
-            placeholder="e.g. tutorials I watched about sqlite indexing"
-          />
-
-          <div className="controls">
-            <label htmlFor="score-threshold">Score threshold: {scoreThreshold.toFixed(2)}</label>
-            <input
-              id="score-threshold"
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={scoreThreshold}
-              onChange={(event) => setScoreThreshold(Number(event.target.value))}
-            />
-            <button type="submit" disabled={loading}>
-              {loading ? 'Searching...' : 'Search History'}
-            </button>
-          </div>
-        </form>
-
-        <section className="results-panel" aria-live="polite">
-          <div className="results-header">
-            <h2>Results</h2>
-            <span>{summary}</span>
-          </div>
-
-          {hasResults ? (
-            <ul className="results-list">
-              {results.map((item, index) => {
-                const videoUrl = item.video_url ?? extractVideoUrl(item.text);
-                const thumbnailUrl = buildThumbnailUrl(item.video_id ?? null);
-                const decodedText = decodeHtmlEntities(item.text);
-                return (
-                  <li key={`${item.file_path}-${index}`} className="result-card">
-                    {thumbnailUrl ? (
-                      <a
-                        href={videoUrl ?? undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="thumb-link"
-                        aria-label={`Open video result ${index + 1}`}
-                      >
-                        <img
-                          src={thumbnailUrl}
-                          alt={`YouTube thumbnail for result ${index + 1}`}
-                          className="result-thumb"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </a>
-                    ) : null}
-                    <div className="card-head">
-                      <strong>#{index + 1}</strong>
-                      <span>
-                        score {typeof item.score === 'number' ? item.score.toFixed(4) : 'n/a'}
-                      </span>
-                    </div>
-                    <p>{decodedText}</p>
-                    <div className="card-foot">
-                      <code>{item.file_path}</code>
-                      {videoUrl ? (
-                        <a href={videoUrl} target="_blank" rel="noreferrer">
-                          Open video
-                        </a>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <div className="empty-state">
-              <p>No results yet. Run a query to search your indexed history.</p>
-            </div>
-          )}
-        </section>
-      </main>
-    </div>
+    <SearchPage
+      importing={importing}
+      importStatus={importStatus}
+      lastImportedPath={lastImportedPath}
+      onPickAndImport={onPickAndImport}
+      onOpenSettings={() => setViewMode('settings')}
+    />
   );
 }
