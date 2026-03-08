@@ -69,11 +69,6 @@ export function useSettings() {
         return;
       }
       applySettings(saved);
-      setSettingsMessage(
-        saved.llm_router
-          ? `Saved optional LLM Router: ${saved.llm_router}.`
-          : 'Saved. LLM Router is not configured.'
-      );
     } catch (err) {
       if (requestId !== saveRequestIdRef.current) {
         return;
