@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import calendar
+import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from threading import Event, Lock
 from typing import Iterable
@@ -13,6 +16,11 @@ from llama_index.core import (
     load_index_from_storage,
 )
 from llama_index.embeddings.fastembed import FastEmbedEmbedding
+from llama_index.core.vector_stores.types import (
+    FilterOperator,
+    MetadataFilter,
+    MetadataFilters,
+)
 
 DEFAULT_INDEX_DIR = Path("dev_assets/index")
 DEFAULT_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
@@ -29,6 +37,10 @@ _INDEX_MARKER_FILES = (
     "graph_store.json",
     "vector_store.json",
 )
+_TIME_EXPRESSION_RE = re.compile(r"^(>=|<=|>|<)\s*(.+)$")
+_YEAR_RE = re.compile(r"^\d{4}$")
+_YEAR_MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 @dataclass(frozen=True)
@@ -38,6 +50,121 @@ class SearchHit:
     text: str
     video_id: str | None
     video_url: str | None
+
+
+@dataclass(frozen=True)
+class TimeBounds:
+    start: datetime
+    end: datetime
+
+
+def _parse_time_token(token: str) -> TimeBounds:
+    value = token.strip()
+    if not value:
+        raise ValueError("Time filter value cannot be empty.")
+
+    if _YEAR_RE.fullmatch(value):
+        year = int(value)
+        return TimeBounds(
+            start=datetime(year, 1, 1, 0, 0, 0),
+            end=datetime(year, 12, 31, 23, 59, 59),
+        )
+
+    if _YEAR_MONTH_RE.fullmatch(value):
+        year, month = value.split("-", maxsplit=1)
+        try:
+            month_int = int(month)
+            last_day = calendar.monthrange(int(year), month_int)[1]
+            return TimeBounds(
+                start=datetime(int(year), month_int, 1, 0, 0, 0),
+                end=datetime(int(year), month_int, last_day, 23, 59, 59),
+            )
+        except ValueError as exc:
+            raise ValueError(f"Invalid calendar month in time filter: `{value}`.") from exc
+
+    if _DATE_RE.fullmatch(value):
+        year, month, day = value.split("-", maxsplit=2)
+        try:
+            return TimeBounds(
+                start=datetime(int(year), int(month), int(day), 0, 0, 0),
+                end=datetime(int(year), int(month), int(day), 23, 59, 59),
+            )
+        except ValueError as exc:
+            raise ValueError(f"Invalid calendar date in time filter: `{value}`.") from exc
+
+    try:
+        point = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(
+            "Unsupported time filter format. Use one of: "
+            "`YYYY`, `YYYY-MM`, `YYYY-MM-DD`, "
+            "`>=YYYY-MM-DD`, `<=YYYY-MM-DD`, or `YYYY-MM-DD..YYYY-MM-DD`."
+        ) from exc
+
+    return TimeBounds(start=point, end=point)
+
+
+def _time_filter_to_metadata_filters(time_filter: str) -> MetadataFilters:
+    expression = time_filter.strip()
+    if not expression:
+        raise ValueError("Time filter value cannot be empty.")
+
+    if ".." in expression:
+        lower_raw, upper_raw = expression.split("..", maxsplit=1)
+        lower = _parse_time_token(lower_raw).start
+        upper = _parse_time_token(upper_raw).end
+        if lower > upper:
+            raise ValueError("Time filter start is after end.")
+        return MetadataFilters(
+            filters=[
+                MetadataFilter(
+                    key="watched_at_iso",
+                    value=lower.isoformat(),
+                    operator=FilterOperator.GTE,
+                ),
+                MetadataFilter(
+                    key="watched_at_iso",
+                    value=upper.isoformat(),
+                    operator=FilterOperator.LTE,
+                ),
+            ]
+        )
+
+    op_match = _TIME_EXPRESSION_RE.fullmatch(expression)
+    if op_match:
+        op_token, raw_value = op_match.groups()
+        bounds = _parse_time_token(raw_value)
+        if op_token == ">=":
+            operator = FilterOperator.GTE
+            value = bounds.start.isoformat()
+        elif op_token == "<=":
+            operator = FilterOperator.LTE
+            value = bounds.end.isoformat()
+        elif op_token == ">":
+            operator = FilterOperator.GT
+            value = bounds.end.isoformat()
+        else:
+            operator = FilterOperator.LT
+            value = bounds.start.isoformat()
+        return MetadataFilters(
+            filters=[MetadataFilter(key="watched_at_iso", value=value, operator=operator)]
+        )
+
+    bounds = _parse_time_token(expression)
+    return MetadataFilters(
+        filters=[
+            MetadataFilter(
+                key="watched_at_iso",
+                value=bounds.start.isoformat(),
+                operator=FilterOperator.GTE,
+            ),
+            MetadataFilter(
+                key="watched_at_iso",
+                value=bounds.end.isoformat(),
+                operator=FilterOperator.LTE,
+            ),
+        ]
+    )
 
 
 def _set_embedding_model(model_name: str = DEFAULT_EMBED_MODEL) -> None:
@@ -143,6 +270,7 @@ def search(
     model_name: str = DEFAULT_EMBED_MODEL,
     score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     retrieval_candidate_k: int = DEFAULT_RETRIEVAL_CANDIDATE_K,
+    time_filter: str | None = None,
 ) -> list[SearchHit]:
     if not index_dir.exists():
         raise FileNotFoundError(
@@ -151,7 +279,15 @@ def search(
 
     _set_embedding_model(model_name)
     index = _get_cached_index(index_dir, model_name)
-    retriever = index.as_retriever(similarity_top_k=retrieval_candidate_k)
+    metadata_filters = (
+        _time_filter_to_metadata_filters(time_filter)
+        if time_filter is not None
+        else None
+    )
+    retriever = index.as_retriever(
+        similarity_top_k=retrieval_candidate_k,
+        filters=metadata_filters,
+    )
     nodes = retriever.retrieve(query)
 
     hits: list[SearchHit] = []

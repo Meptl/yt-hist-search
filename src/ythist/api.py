@@ -222,6 +222,7 @@ def search_api_endpoint(
     llm_router = settings["llm_router"]
     effective_query = q
     static_filters: dict[str, str] = {}
+    time_filter: str | None = None
     if llm_router is not None:
         try:
             routed = rewrite_prompt_with_router(
@@ -230,6 +231,7 @@ def search_api_endpoint(
             )
             effective_query = routed.new_prompt
             static_filters = routed.static_filters
+            time_filter = static_filters.get("time")
         except LLMRouterError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -238,8 +240,11 @@ def search_api_endpoint(
             query=effective_query,
             index_dir=Path(index_dir),
             score_threshold=score_threshold,
+            time_filter=time_filter,
         )
     except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     payload = [
