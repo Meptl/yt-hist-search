@@ -46,6 +46,13 @@ class SearchResponseItem(BaseModel):
     video_url: str | None = None
 
 
+class SearchResponse(BaseModel):
+    query: str
+    original_query: str
+    static_filters: dict[str, str]
+    results: list[SearchResponseItem]
+
+
 class InitResponse(BaseModel):
     index_dir: str
     data_dir: str
@@ -212,12 +219,12 @@ def index_status_api_endpoint(
     return IndexStatusResponse(index_ready=index_ready(index_path), index_dir=str(index_path))
 
 
-@app.get("/api/search")
+@app.get("/api/search", response_model=SearchResponse)
 def search_api_endpoint(
     q: str,
     score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     index_dir: str = str(DEFAULT_INDEX_DIR),
-) -> dict[str, list[SearchResponseItem] | str]:
+) -> SearchResponse:
     settings = load_settings()
     llm_router = settings["llm_router"]
     effective_query = q
@@ -257,12 +264,12 @@ def search_api_endpoint(
         )
         for hit in hits
     ]
-    return {
-        "query": effective_query,
-        "original_query": q,
-        "static_filters": static_filters,
-        "results": payload,
-    }
+    return SearchResponse(
+        query=effective_query,
+        original_query=q,
+        static_filters=static_filters,
+        results=payload,
+    )
 
 
 @app.post("/api/init", response_model=InitResponse)
@@ -327,7 +334,7 @@ def search_endpoint(
     q: str,
     score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     index_dir: str = str(DEFAULT_INDEX_DIR),
-) -> dict[str, list[SearchResponseItem] | str]:
+) -> SearchResponse:
     return search_api_endpoint(
         q=q,
         score_threshold=score_threshold,
