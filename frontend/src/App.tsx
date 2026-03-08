@@ -12,6 +12,8 @@ type SearchResponseItem = {
   score: number | null;
   file_path: string;
   text: string;
+  video_id?: string | null;
+  video_url?: string | null;
 };
 
 type SearchResponse = {
@@ -34,6 +36,14 @@ type IndexStatusResponse = {
 function extractVideoUrl(text: string): string | null {
   const match = text.match(/Video URL:\s*(https?:\/\/\S+)/i);
   return match ? match[1] : null;
+}
+
+function buildThumbnailUrl(videoId: string | null): string | null {
+  if (!videoId) {
+    return null;
+  }
+
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 }
 
 function decodeHtmlEntities(text: string): string {
@@ -288,10 +298,28 @@ export function App() {
           {hasResults ? (
             <ul className="results-list">
               {results.map((item, index) => {
-                const videoUrl = extractVideoUrl(item.text);
+                const videoUrl = item.video_url ?? extractVideoUrl(item.text);
+                const thumbnailUrl = buildThumbnailUrl(item.video_id ?? null);
                 const decodedText = decodeHtmlEntities(item.text);
                 return (
                   <li key={`${item.file_path}-${index}`} className="result-card">
+                    {thumbnailUrl ? (
+                      <a
+                        href={videoUrl ?? undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="thumb-link"
+                        aria-label={`Open video result ${index + 1}`}
+                      >
+                        <img
+                          src={thumbnailUrl}
+                          alt={`YouTube thumbnail for result ${index + 1}`}
+                          className="result-thumb"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </a>
+                    ) : null}
                     <div className="card-head">
                       <strong>#{index + 1}</strong>
                       <span>

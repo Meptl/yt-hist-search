@@ -33,6 +33,8 @@ class SearchResponseItem(BaseModel):
     score: float | None
     file_path: str
     text: str
+    video_id: str | None = None
+    video_url: str | None = None
 
 
 class InitResponse(BaseModel):
@@ -157,7 +159,13 @@ def search_api_endpoint(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     payload = [
-        SearchResponseItem(score=hit.score, file_path=hit.file_path, text=hit.text)
+        SearchResponseItem(
+            score=hit.score,
+            file_path=hit.file_path,
+            text=hit.text,
+            video_id=hit.video_id,
+            video_url=hit.video_url,
+        )
         for hit in hits
     ]
     return {"query": q, "results": payload}

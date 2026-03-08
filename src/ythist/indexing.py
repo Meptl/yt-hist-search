@@ -36,6 +36,8 @@ class SearchHit:
     score: float | None
     file_path: str
     text: str
+    video_id: str | None
+    video_url: str | None
 
 
 def _set_embedding_model(model_name: str = DEFAULT_EMBED_MODEL) -> None:
@@ -169,6 +171,8 @@ def search(
                 score=score,
                 file_path=file_path,
                 text=node.text,
+                video_id=str(metadata["video_id"]) if metadata.get("video_id") else None,
+                video_url=str(metadata["video_url"]) if metadata.get("video_url") else None,
             )
         )
     return hits

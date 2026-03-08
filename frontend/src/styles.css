@@ -201,6 +201,22 @@ body {
   background: #fffeff;
 }
 
+.thumb-link {
+  display: block;
+  margin-bottom: 0.85rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--edge) 88%, #000 12%);
+  background: #d7dccc;
+}
+
+.result-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
 .card-head,
 .card-foot {
   display: flex;
