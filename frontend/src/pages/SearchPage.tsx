@@ -1,4 +1,5 @@
 import { FormEvent, KeyboardEvent, useMemo, useState } from 'react';
+import { YoutubeVideoCard } from '../components/YoutubeVideoCard';
 
 type SearchResponseItem = {
   score: number | null;
@@ -183,40 +184,14 @@ export function SearchPage({
                 const thumbnailUrl = buildThumbnailUrl(item.video_id ?? null);
                 const decodedText = decodeHtmlEntities(item.text);
                 return (
-                  <li key={`${item.file_path}-${index}`} className="result-card">
-                    {thumbnailUrl ? (
-                      <a
-                        href={videoUrl ?? undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="thumb-link"
-                        aria-label={`Open video result ${index + 1}`}
-                      >
-                        <img
-                          src={thumbnailUrl}
-                          alt={`YouTube thumbnail for result ${index + 1}`}
-                          className="result-thumb"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </a>
-                    ) : null}
-                    <div className="card-head">
-                      <strong>#{index + 1}</strong>
-                      <span>
-                        score {typeof item.score === 'number' ? item.score.toFixed(4) : 'n/a'}
-                      </span>
-                    </div>
-                    <p>{decodedText}</p>
-                    <div className="card-foot">
-                      <code>{item.file_path}</code>
-                      {videoUrl ? (
-                        <a href={videoUrl} target="_blank" rel="noreferrer">
-                          Open video
-                        </a>
-                      ) : null}
-                    </div>
-                  </li>
+                  <YoutubeVideoCard
+                    key={`${item.file_path}-${index}`}
+                    item={item}
+                    index={index}
+                    videoUrl={videoUrl}
+                    thumbnailUrl={thumbnailUrl}
+                    decodedText={decodedText}
+                  />
                 );
               })}
             </ul>
