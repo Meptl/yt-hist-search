@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchSettings, type LLMBackend, type SettingsResponse, updateSettings } from '../api/settings';
 
@@ -9,7 +9,8 @@ export function useSettings() {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsPath, setSettingsPath] = useState<string | null>(null);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
-  const [llmBackend, setLlmBackend] = useState<LLMBackendSelection>('none');
+  const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
+  const saveRequestIdRef = useRef(0);
   const [llmBackendOptions, setLlmBackendOptions] = useState<LLMBackend[]>([
     'codex',
     'claude',
@@ -18,7 +19,7 @@ export function useSettings() {
   ]);
 
   const applySettings = useCallback((settings: SettingsResponse) => {
-    setLlmBackend(settings.llm_backend ?? 'none');
+    setLlmBackendState(settings.llm_backend ?? 'none');
     setLlmBackendOptions(settings.llm_backend_options);
     setSettingsPath(settings.settings_path);
   }, []);
@@ -53,13 +54,18 @@ export function useSettings() {
     };
   }, [applySettings]);
 
-  const saveSettings = useCallback(async () => {
+  const persistLlmBackend = useCallback(async (next: LLMBackendSelection) => {
+    const requestId = saveRequestIdRef.current + 1;
+    saveRequestIdRef.current = requestId;
     setSettingsSaving(true);
     setSettingsMessage(null);
 
     try {
-      const selectedBackend = llmBackend === 'none' ? null : llmBackend;
+      const selectedBackend = next === 'none' ? null : next;
       const saved = await updateSettings(selectedBackend);
+      if (requestId !== saveRequestIdRef.current) {
+        return;
+      }
       applySettings(saved);
       setSettingsMessage(
         saved.llm_backend
@@ -67,11 +73,24 @@ export function useSettings() {
           : 'Saved. LLM backend is not configured.'
       );
     } catch (err) {
+      if (requestId !== saveRequestIdRef.current) {
+        return;
+      }
       setSettingsMessage(err instanceof Error ? err.message : 'Unexpected error while saving settings');
     } finally {
-      setSettingsSaving(false);
+      if (requestId === saveRequestIdRef.current) {
+        setSettingsSaving(false);
+      }
     }
-  }, [applySettings, llmBackend]);
+  }, [applySettings]);
+
+  const setLlmBackend = useCallback(
+    (next: LLMBackendSelection) => {
+      setLlmBackendState(next);
+      void persistLlmBackend(next);
+    },
+    [persistLlmBackend]
+  );
 
   return {
     llmBackend,
@@ -81,6 +100,5 @@ export function useSettings() {
     settingsPath,
     settingsMessage,
     setLlmBackend,
-    saveSettings
   };
 }

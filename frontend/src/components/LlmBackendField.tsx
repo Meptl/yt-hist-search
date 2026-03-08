@@ -10,7 +10,6 @@ type LlmBackendFieldProps = {
   settingsPath: string | null;
   settingsMessage: string | null;
   onChange: (next: LLMBackendSelection) => void;
-  onSave: () => Promise<void>;
   compact?: boolean;
 };
 
@@ -23,7 +22,6 @@ export function LlmBackendField({
   settingsPath,
   settingsMessage,
   onChange,
-  onSave,
   compact = false
 }: LlmBackendFieldProps) {
   return (
@@ -47,10 +45,6 @@ export function LlmBackendField({
         Optional. Configure this to enable more sophisticated query handling, such as date
         filtering.
       </p>
-
-      <button type="button" onClick={() => void onSave()} disabled={saving}>
-        {saving ? 'Saving setting...' : 'Save optional LLM setting'}
-      </button>
 
       {settingsPath ? <p className="status-line mono">{settingsPath}</p> : null}
       {settingsMessage ? <p className="status-line">{settingsMessage}</p> : null}

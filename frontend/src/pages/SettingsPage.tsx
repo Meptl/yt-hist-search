@@ -10,7 +10,6 @@ type SettingsPageProps = {
   settingsPath: string | null;
   settingsMessage: string | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
-  onSaveSettings: () => Promise<void>;
   onBack: () => void;
 };
 
@@ -22,7 +21,6 @@ export function SettingsPage({
   settingsPath,
   settingsMessage,
   onSetLlmBackend,
-  onSaveSettings,
   onBack
 }: SettingsPageProps) {
   return (
@@ -48,7 +46,6 @@ export function SettingsPage({
             settingsPath={settingsPath}
             settingsMessage={settingsMessage}
             onChange={onSetLlmBackend}
-            onSave={onSaveSettings}
             compact
           />
 

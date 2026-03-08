@@ -42,8 +42,7 @@ export function App() {
     settingsSaving,
     settingsPath,
     settingsMessage,
-    setLlmBackend,
-    saveSettings
+    setLlmBackend
   } = useSettings();
 
   useEffect(() => {
@@ -158,7 +157,6 @@ export function App() {
         settingsPath={settingsPath}
         settingsMessage={settingsMessage}
         onSetLlmBackend={setLlmBackend}
-        onSaveSettings={saveSettings}
         onPickAndImport={onPickAndImport}
       />
     );
@@ -174,7 +172,6 @@ export function App() {
         settingsPath={settingsPath}
         settingsMessage={settingsMessage}
         onSetLlmBackend={setLlmBackend}
-        onSaveSettings={saveSettings}
         onBack={() => setViewMode('search')}
       />
     );

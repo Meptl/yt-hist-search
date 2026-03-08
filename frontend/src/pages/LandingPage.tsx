@@ -12,7 +12,6 @@ type LandingPageProps = {
   settingsPath: string | null;
   settingsMessage: string | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
-  onSaveSettings: () => Promise<void>;
   onPickAndImport: () => Promise<void>;
 };
 
@@ -26,7 +25,6 @@ export function LandingPage({
   settingsPath,
   settingsMessage,
   onSetLlmBackend,
-  onSaveSettings,
   onPickAndImport
 }: LandingPageProps) {
   return (
@@ -50,7 +48,6 @@ export function LandingPage({
             settingsPath={settingsPath}
             settingsMessage={settingsMessage}
             onChange={onSetLlmBackend}
-            onSave={onSaveSettings}
           />
 
           <button type="button" onClick={() => void onPickAndImport()} disabled={importing}>
