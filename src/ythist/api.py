@@ -32,6 +32,7 @@ from ythist.settings import (
     save_settings,
     settings_path,
 )
+from ythist.llm_router import LLMRouterError, rewrite_prompt_with_router
 
 app = FastAPI(title="yt-hist", version="0.1.0")
 logger = logging.getLogger(__name__)
@@ -217,9 +218,24 @@ def search_api_endpoint(
     score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     index_dir: str = str(DEFAULT_INDEX_DIR),
 ) -> dict[str, list[SearchResponseItem] | str]:
+    settings = load_settings()
+    llm_router = settings["llm_router"]
+    effective_query = q
+    static_filters: dict[str, str] = {}
+    if llm_router is not None:
+        try:
+            routed = rewrite_prompt_with_router(
+                llm_router=llm_router,
+                user_query=q,
+            )
+            effective_query = routed.new_prompt
+            static_filters = routed.static_filters
+        except LLMRouterError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
     try:
         hits = search(
-            query=q,
+            query=effective_query,
             index_dir=Path(index_dir),
             score_threshold=score_threshold,
         )
@@ -236,7 +252,12 @@ def search_api_endpoint(
         )
         for hit in hits
     ]
-    return {"query": q, "results": payload}
+    return {
+        "query": effective_query,
+        "original_query": q,
+        "static_filters": static_filters,
+        "results": payload,
+    }
 
 
 @app.post("/api/init", response_model=InitResponse)
