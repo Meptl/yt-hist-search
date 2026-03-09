@@ -56,7 +56,7 @@ body {
   gap: 0.95rem;
 }
 
-.landing-panel button {
+.landing-panel > button {
   justify-self: flex-start;
   border: 0;
   border-radius: 10px;
@@ -68,7 +68,7 @@ body {
   cursor: pointer;
 }
 
-.landing-panel button:disabled {
+.landing-panel > button:disabled {
   opacity: 0.7;
   cursor: progress;
 }
@@ -134,7 +134,8 @@ body {
 .query-panel select,
 .settings-block select,
 .settings-block input,
-.settings-inline input {
+.settings-inline input,
+.input-with-icon input {
   width: 100%;
   border: 1px solid var(--edge);
   border-radius: 12px;
@@ -237,6 +238,56 @@ body {
 .settings-inline {
   display: grid;
   gap: 0.8rem;
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon input {
+  padding-right: 2.75rem;
+}
+
+.visibility-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visibility-toggle svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.visibility-toggle:hover:not(:disabled),
+.visibility-toggle:focus-visible {
+  color: var(--accent);
+}
+
+.visibility-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, #ffffff 35%);
+  outline-offset: 1px;
+}
+
+.visibility-toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .results-panel {
