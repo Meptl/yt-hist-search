@@ -65,7 +65,6 @@ export function YoutubeDataApiKeyField({
             draftValueRef.current = next;
           }}
           onBlur={commitDraft}
-          placeholder="AIza..."
           disabled={isDisabled}
         />
         <button
