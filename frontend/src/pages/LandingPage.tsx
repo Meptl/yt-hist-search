@@ -14,9 +14,10 @@ type LandingPageProps = {
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
   youtubeDataApiKey: string;
+  importError: string | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
-  onImportTakeoutFile: (file: File) => Promise<void>;
+  onImportTakeoutFile: (file: File) => Promise<boolean>;
 };
 
 export function LandingPage({
@@ -28,6 +29,7 @@ export function LandingPage({
   settingsMessage,
   llmRouterCliWarning,
   youtubeDataApiKey,
+  importError,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
   onImportTakeoutFile
@@ -54,10 +56,12 @@ export function LandingPage({
     if (!selectedTakeoutFile || importing) {
       return;
     }
-    await onImportTakeoutFile(selectedTakeoutFile);
-    setSelectedTakeoutFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    const importSucceeded = await onImportTakeoutFile(selectedTakeoutFile);
+    if (importSucceeded) {
+      setSelectedTakeoutFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   }
 
@@ -135,6 +139,11 @@ export function LandingPage({
             className="sr-only"
             onChange={(event) => handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
+          {importError ? (
+            <p className="status-line warning-line import-error" role="alert">
+              {importError}
+            </p>
+          ) : null}
 
           <h2>Additional Settings</h2>
 

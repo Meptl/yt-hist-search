@@ -23,6 +23,7 @@ export function App() {
   const [checkingIndex, setCheckingIndex] = useState(true);
   const [indexReady, setIndexReady] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const [lastImportedPath, setLastImportedPath] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('search');
 
@@ -94,8 +95,9 @@ export function App() {
     };
   }, []);
 
-  async function onImportTakeoutFile(file: File) {
+  async function onImportTakeoutFile(file: File): Promise<boolean> {
     setImporting(true);
+    setImportError(null);
 
     try {
       const formData = new FormData();
@@ -117,8 +119,15 @@ export function App() {
       setLastImportedPath(file.name);
       setIndexReady(true);
       setViewMode('search');
+      return true;
     } catch (err) {
       console.error('Import takeout failed', err);
+      if (err instanceof Error && err.message.trim().length > 0) {
+        setImportError(err.message);
+      } else {
+        setImportError('That file does not look like a Google Takeout watch history file.');
+      }
+      return false;
     } finally {
       setImporting(false);
     }
@@ -152,6 +161,7 @@ export function App() {
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
         youtubeDataApiKey={youtubeDataApiKey}
+        importError={importError}
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
         onImportTakeoutFile={onImportTakeoutFile}
