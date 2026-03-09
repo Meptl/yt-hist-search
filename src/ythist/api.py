@@ -7,8 +7,12 @@ import shutil
 import time
 import json
 import traceback
+import io
+import re
+import uuid
+from contextlib import redirect_stderr
 from pathlib import Path
-from threading import Thread
+from threading import Lock, Thread
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -92,6 +96,23 @@ class IndexStatusResponse(BaseModel):
     index_dir: str
 
 
+ImportJobState = Literal["running", "completed", "failed"]
+
+
+class ImportTakeoutJobCreateResponse(BaseModel):
+    job_id: str
+    status: ImportJobState
+
+
+class ImportTakeoutJobStatusResponse(BaseModel):
+    job_id: str
+    status: ImportJobState
+    progress: float
+    messages: list[str]
+    result: ImportTakeoutResponse | None = None
+    error: ImportErrorDetail | None = None
+
+
 LLMRouter = Literal["codex", "claude", "gemini", "opencode"]
 LLM_ROUTER_CLI_COMMANDS: dict[LLMRouter, str] = {
     "codex": "codex",
@@ -112,6 +133,128 @@ class UpdateSettingsRequest(BaseModel):
     llm_router: LLMRouter | None = None
     llm_backend: LLMRouter | None = None
     youtube_data_api_key: str | None = None
+
+
+class _ImportJob:
+    def __init__(self, *, job_id: str) -> None:
+        self.job_id = job_id
+        self.status: ImportJobState = "running"
+        self.progress = 0.0
+        self.messages: list[str] = []
+        self.result: ImportTakeoutResponse | None = None
+        self.error: ImportErrorDetail | None = None
+
+
+class _ImportJobsState:
+    def __init__(self) -> None:
+        self._lock = Lock()
+        self._jobs: dict[str, _ImportJob] = {}
+
+    def create_job(self) -> _ImportJob:
+        job = _ImportJob(job_id=uuid.uuid4().hex)
+        with self._lock:
+            self._jobs[job.job_id] = job
+        return job
+
+    def get_job(self, job_id: str) -> _ImportJob | None:
+        with self._lock:
+            return self._jobs.get(job_id)
+
+    def snapshot(self, job_id: str) -> ImportTakeoutJobStatusResponse | None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return None
+            return ImportTakeoutJobStatusResponse(
+                job_id=job.job_id,
+                status=job.status,
+                progress=job.progress,
+                messages=list(job.messages),
+                result=job.result,
+                error=job.error,
+            )
+
+    def set_progress(self, job_id: str, progress: float) -> None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None or job.status != "running":
+                return
+            job.progress = max(job.progress, min(100.0, progress))
+
+    def append_message(self, job_id: str, message: str) -> None:
+        sanitized = message.strip()
+        if not sanitized:
+            return
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return
+            if job.messages and job.messages[-1] == sanitized:
+                return
+            job.messages.append(sanitized)
+            if len(job.messages) > 500:
+                job.messages = job.messages[-500:]
+
+    def complete(self, job_id: str, result: ImportTakeoutResponse) -> None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return
+            job.status = "completed"
+            job.progress = 100.0
+            job.result = result
+            job.error = None
+
+    def fail(self, job_id: str, error: ImportErrorDetail) -> None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return
+            job.status = "failed"
+            job.error = error
+
+
+_EMBEDDINGS_PROGRESS_RE = re.compile(r"(\d+)\s*/\s*(\d+)")
+_IMPORT_JOBS = _ImportJobsState()
+
+
+class _ProgressStream(io.TextIOBase):
+    def __init__(self, on_message) -> None:
+        self._on_message = on_message
+        self._buffer = ""
+
+    def writable(self) -> bool:
+        return True
+
+    def write(self, text: str) -> int:
+        if not text:
+            return 0
+        self._buffer += text
+        for separator in ("\r", "\n"):
+            while separator in self._buffer:
+                part, self._buffer = self._buffer.split(separator, 1)
+                self._on_message(part)
+        return len(text)
+
+    def flush(self) -> None:
+        if self._buffer:
+            self._on_message(self._buffer)
+            self._buffer = ""
+
+
+def _progress_from_message(message: str) -> float | None:
+    normalized = message.strip()
+    if "Applying transformations:" in normalized:
+        return 55.0
+    if "Generating embeddings:" in normalized:
+        match = _EMBEDDINGS_PROGRESS_RE.search(normalized)
+        if match:
+            done = int(match.group(1))
+            total = int(match.group(2))
+            if total > 0:
+                return 55.0 + (done / total) * 44.0
+        return 60.0
+    return None
 
 
 def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
@@ -190,6 +333,114 @@ def _run_import_from_takeout_path(
         csv_out=str(csv_out),
         index_dir=str(index_dir),
     )
+
+
+def _run_import_job(
+    *,
+    job_id: str,
+    takeout_path: Path,
+    index_dir: Path,
+    data_dir: Path,
+    skip_index: bool,
+    youtube_data_api_key: str | None,
+) -> None:
+    _IMPORT_JOBS.append_message(job_id, "Import started")
+    _IMPORT_JOBS.set_progress(job_id, 5.0)
+    try:
+        if not takeout_path.exists() or not takeout_path.is_file():
+            raise HTTPException(status_code=400, detail=f"File not found: {takeout_path}")
+        if takeout_path.suffix.lower() not in {".html", ".htm", ".json"}:
+            raise HTTPException(
+                status_code=400,
+                detail="Expected a .html/.htm/.json takeout file",
+            )
+
+        data_dir.mkdir(parents=True, exist_ok=True)
+        index_dir.mkdir(parents=True, exist_ok=True)
+
+        _IMPORT_JOBS.append_message(job_id, "Parsing watch history")
+        _IMPORT_JOBS.set_progress(job_id, 12.0)
+        entries = parse_watch_history(takeout_path)
+        if not entries:
+            raise HTTPException(
+                status_code=400,
+                detail="No watch entries found in the provided takeout file.",
+            )
+
+        _IMPORT_JOBS.append_message(job_id, f"Parsed {len(entries)} entries")
+        _IMPORT_JOBS.set_progress(job_id, 20.0)
+        csv_out = data_dir / "youtube_watch_history.csv"
+        write_csv(entries, csv_out)
+        _IMPORT_JOBS.append_message(job_id, f"Wrote CSV to {csv_out}")
+        _IMPORT_JOBS.set_progress(job_id, 30.0)
+
+        indexed_entries = 0
+        if not skip_index:
+            _IMPORT_JOBS.append_message(job_id, "Preparing documents for indexing")
+            docs = to_llama_documents(
+                entries,
+                youtube_data_api_key=youtube_data_api_key,
+            )
+            _IMPORT_JOBS.append_message(
+                job_id, f"Prepared {len(docs)} documents. Starting embeddings."
+            )
+            _IMPORT_JOBS.set_progress(job_id, 55.0)
+
+            def _on_backend_progress(message: str) -> None:
+                normalized = message.strip()
+                if not normalized:
+                    return
+                _IMPORT_JOBS.append_message(job_id, normalized)
+                progress = _progress_from_message(normalized)
+                if progress is not None:
+                    _IMPORT_JOBS.set_progress(job_id, progress)
+
+            progress_stream = _ProgressStream(_on_backend_progress)
+            with redirect_stderr(progress_stream):
+                indexed_entries = ingest_documents(docs, index_dir=index_dir)
+            progress_stream.flush()
+            _IMPORT_JOBS.append_message(job_id, "Indexing completed")
+            _IMPORT_JOBS.set_progress(job_id, 99.0)
+
+        result = ImportTakeoutResponse(
+            parsed_entries=len(entries),
+            indexed_entries=indexed_entries,
+            csv_out=str(csv_out),
+            index_dir=str(index_dir),
+        )
+        _IMPORT_JOBS.append_message(job_id, "Import completed")
+        _IMPORT_JOBS.complete(job_id, result)
+    except HTTPException as exc:
+        detail = exc.detail
+        if isinstance(detail, dict) and "message" in detail:
+            error = ImportErrorDetail(
+                message=str(detail.get("message")),
+                stack_trace=(
+                    str(detail.get("stack_trace"))
+                    if detail.get("stack_trace") is not None
+                    else None
+                ),
+            )
+        else:
+            error = ImportErrorDetail(
+                message=str(detail),
+                stack_trace="".join(traceback.format_exception(exc)),
+            )
+        _IMPORT_JOBS.append_message(job_id, f"Import failed: {error.message}")
+        _IMPORT_JOBS.fail(job_id, error)
+    except Exception as exc:
+        logger.exception("Unhandled import job error")
+        error = ImportErrorDetail(
+            message=f"Import failed unexpectedly: {exc}",
+            stack_trace="".join(traceback.format_exception(exc)),
+        )
+        _IMPORT_JOBS.append_message(job_id, f"Import failed: {error.message}")
+        _IMPORT_JOBS.fail(job_id, error)
+    finally:
+        try:
+            os.remove(takeout_path)
+        except OSError:
+            pass
 
 
 def _frontend_dist_dir() -> Path:
@@ -424,6 +675,57 @@ async def import_takeout_api_endpoint(
             os.remove(temp_file_path)
         except OSError:
             pass
+
+
+@app.post("/api/import-takeout-jobs", response_model=ImportTakeoutJobCreateResponse)
+async def import_takeout_job_create_api_endpoint(
+    file: UploadFile = File(...),
+    index_dir: str = Form(str(DEFAULT_INDEX_DIR)),
+    data_dir: str = Form("dev_assets/data"),
+    skip_index: bool = Form(False),
+) -> ImportTakeoutJobCreateResponse:
+    file_name = Path(file.filename or "watch-history.html").name
+    file_suffix = Path(file_name).suffix.lower()
+    if file_suffix not in {".html", ".htm", ".json"}:
+        raise HTTPException(
+            status_code=400,
+            detail=ImportErrorDetail(
+                message="Expected a .html/.htm/.json takeout file",
+                stack_trace=None,
+            ).model_dump(),
+        )
+
+    with tempfile.NamedTemporaryFile(suffix=file_suffix or ".tmp", delete=False) as tmp:
+        temp_file_path = Path(tmp.name)
+        content = await file.read()
+        tmp.write(content)
+
+    job = _IMPORT_JOBS.create_job()
+    worker = Thread(
+        target=_run_import_job,
+        kwargs={
+            "job_id": job.job_id,
+            "takeout_path": temp_file_path,
+            "index_dir": Path(index_dir),
+            "data_dir": Path(data_dir),
+            "skip_index": skip_index,
+            "youtube_data_api_key": load_settings()["youtube_data_api_key"],
+        },
+        daemon=True,
+    )
+    worker.start()
+    return ImportTakeoutJobCreateResponse(job_id=job.job_id, status=job.status)
+
+
+@app.get(
+    "/api/import-takeout-jobs/{job_id}",
+    response_model=ImportTakeoutJobStatusResponse,
+)
+def import_takeout_job_status_api_endpoint(job_id: str) -> ImportTakeoutJobStatusResponse:
+    snapshot = _IMPORT_JOBS.snapshot(job_id)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Import job not found")
+    return snapshot
 
 
 @app.post("/api/validate-takeout", response_model=ValidateTakeoutResponse)

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useSettings } from './hooks/useSettings';
+import { ImportProgressPage } from './pages/ImportProgressPage';
 import { LandingPage } from './pages/LandingPage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -25,7 +26,30 @@ type ValidateTakeoutResponse = {
   parsed_entries: number;
 };
 
-type ViewMode = 'search' | 'settings';
+type ImportTakeoutResponse = {
+  parsed_entries: number;
+  indexed_entries: number;
+  csv_out: string;
+  index_dir: string;
+};
+
+type ImportJobState = 'running' | 'completed' | 'failed';
+
+type ImportTakeoutJobCreateResponse = {
+  job_id: string;
+  status: ImportJobState;
+};
+
+type ImportTakeoutJobStatusResponse = {
+  job_id: string;
+  status: ImportJobState;
+  progress: number;
+  messages: string[];
+  result: ImportTakeoutResponse | null;
+  error: ImportApiErrorDetail | null;
+};
+
+type ViewMode = 'search' | 'settings' | 'importProgress';
 
 function parseImportError(
   payload: unknown,
@@ -72,6 +96,10 @@ export function App() {
   const [importError, setImportError] = useState<ImportErrorDetails | null>(null);
   const [lastImportedPath, setLastImportedPath] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('search');
+  const [activeImportJobId, setActiveImportJobId] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importMessages, setImportMessages] = useState<string[]>([]);
+  const [importJobState, setImportJobState] = useState<ImportJobState>('running');
 
   const {
     llmBackend,
@@ -141,16 +169,101 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!activeImportJobId) {
+      return;
+    }
+
+    let cancelled = false;
+    let timerId: number | undefined;
+
+    async function pollImportJobStatus() {
+      try {
+        const response = await fetch(`/api/import-takeout-jobs/${activeImportJobId}`);
+        const payload = (await response.json()) as ImportTakeoutJobStatusResponse | { detail: unknown };
+        if (!response.ok) {
+          throw new Error('Failed to fetch import progress');
+        }
+        if (cancelled) {
+          return;
+        }
+
+        const status = payload as ImportTakeoutJobStatusResponse;
+        setImportProgress(status.progress);
+        setImportMessages(status.messages);
+        setImportJobState(status.status);
+
+        if (status.status === 'completed') {
+          setImporting(false);
+          setActiveImportJobId(null);
+          setIndexReady(true);
+          setViewMode('search');
+          setImportProgress(100);
+          return;
+        }
+
+        if (status.status === 'failed') {
+          setImporting(false);
+          setImportError(
+            parseImportError(
+              {
+                detail: status.error ?? {
+                  message: 'Import failed'
+                }
+              },
+              null,
+              'Import failed'
+            )
+          );
+          setViewMode('importProgress');
+          return;
+        }
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        setImporting(false);
+        setImportError({
+          message: err instanceof Error ? err.message : 'Import progress polling failed',
+          stackTrace: err instanceof Error ? err.stack ?? null : null,
+          statusCode: null
+        });
+        setImportJobState('failed');
+        setViewMode('importProgress');
+        return;
+      }
+
+      timerId = window.setTimeout(() => {
+        void pollImportJobStatus();
+      }, 500);
+    }
+
+    void pollImportJobStatus();
+
+    return () => {
+      cancelled = true;
+      if (timerId) {
+        window.clearTimeout(timerId);
+      }
+    };
+  }, [activeImportJobId]);
+
   async function onImportTakeoutFile(file: File): Promise<boolean> {
     setImporting(true);
     setImportError(null);
+    setActiveImportJobId(null);
+    setImportProgress(0);
+    setImportMessages([]);
+    setImportJobState('running');
+    setViewMode('importProgress');
+    setLastImportedPath(file.name);
 
     try {
       const formData = new FormData();
       formData.set('file', file);
       formData.set('skip_index', 'false');
 
-      const response = await fetch('/api/import-takeout', {
+      const response = await fetch('/api/import-takeout-jobs', {
         method: 'POST',
         body: formData
       });
@@ -158,12 +271,13 @@ export function App() {
       const payload = (await response.json()) as unknown;
       if (!response.ok) {
         setImportError(parseImportError(payload, response.status));
+        setImporting(false);
+        setViewMode('search');
         return false;
       }
 
-      setLastImportedPath(file.name);
-      setIndexReady(true);
-      setViewMode('search');
+      const job = payload as ImportTakeoutJobCreateResponse;
+      setActiveImportJobId(job.job_id);
       return true;
     } catch (err) {
       console.error('Import takeout failed', err);
@@ -180,9 +294,10 @@ export function App() {
           statusCode: null
         });
       }
-      return false;
-    } finally {
       setImporting(false);
+      setImportJobState('failed');
+      setViewMode('importProgress');
+      return false;
     }
   }
 
@@ -237,6 +352,23 @@ export function App() {
           </section>
         </main>
       </div>
+    );
+  }
+
+  if (importing || viewMode === 'importProgress') {
+    return (
+      <ImportProgressPage
+        progress={importProgress}
+        messages={importMessages}
+        status={importJobState}
+        importError={importError}
+        onBack={() => {
+          if (importing) {
+            return;
+          }
+          setViewMode('search');
+        }}
+      />
     );
   }
 

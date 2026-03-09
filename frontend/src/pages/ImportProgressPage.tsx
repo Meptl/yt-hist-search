@@ -1,0 +1,76 @@
+type ImportErrorDetails = {
+  message: string;
+  stackTrace: string | null;
+  statusCode: number | null;
+};
+
+type ImportJobState = 'running' | 'completed' | 'failed';
+
+type ImportProgressPageProps = {
+  progress: number;
+  messages: string[];
+  status: ImportJobState;
+  importError: ImportErrorDetails | null;
+  onBack: () => void;
+};
+
+export function ImportProgressPage({
+  progress,
+  messages,
+  status,
+  importError,
+  onBack
+}: ImportProgressPageProps) {
+  const clampedProgress = Math.max(0, Math.min(100, progress));
+  const title =
+    status === 'failed'
+      ? 'Import failed'
+      : status === 'completed'
+        ? 'Import completed'
+        : 'Importing and indexing...';
+
+  return (
+    <div className="page">
+      <main className="app-shell import-progress-shell">
+        <section className="import-progress-panel">
+          <h1>{title}</h1>
+          <p className="status-line mono">{clampedProgress.toFixed(0)}%</p>
+          <div
+            className="import-progress-track"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Number(clampedProgress.toFixed(0))}
+          >
+            <div
+              className="import-progress-fill"
+              style={{ width: `${clampedProgress}%` }}
+            />
+          </div>
+          <p className="status-line">
+            {status === 'failed'
+              ? 'Review backend output below.'
+              : 'Live backend output'}
+          </p>
+          <pre className="import-progress-log" aria-live="polite">
+            {messages.length > 0 ? messages.join('\n') : 'Waiting for backend output...'}
+          </pre>
+          {importError ? (
+            <div className="import-progress-error" role="status">
+              <p className="import-error-message">{importError.message}</p>
+              {importError.statusCode ? (
+                <p className="status-line mono">HTTP {importError.statusCode}</p>
+              ) : null}
+              {importError.stackTrace ? <pre>{importError.stackTrace}</pre> : null}
+            </div>
+          ) : null}
+          {status === 'failed' ? (
+            <button type="button" className="floating-import-button" onClick={onBack}>
+              Back to import
+            </button>
+          ) : null}
+        </section>
+      </main>
+    </div>
+  );
+}

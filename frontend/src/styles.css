@@ -376,6 +376,73 @@ body {
   font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+.import-progress-shell {
+  max-width: 860px;
+}
+
+.import-progress-panel {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.import-progress-panel h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.import-progress-track {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid var(--edge);
+  background: #e8ecdf;
+  overflow: hidden;
+}
+
+.import-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(130deg, var(--accent), #115e59);
+  transition: width 220ms ease;
+}
+
+.import-progress-log {
+  margin: 0;
+  min-height: 280px;
+  max-height: 52vh;
+  overflow: auto;
+  border-radius: 10px;
+  border: 1px solid var(--edge);
+  background: #fbfcf8;
+  padding: 0.8rem;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.import-progress-error {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid #f7c8b8;
+  background: #fff4ee;
+}
+
+.import-progress-error pre {
+  margin: 0.5rem 0 0;
+  max-height: 220px;
+  overflow: auto;
+  border-radius: 8px;
+  border: 1px solid #f7c8b8;
+  background: #fff;
+  padding: 0.65rem;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .icon-button {
   border: 0;
   border-radius: 12px;
