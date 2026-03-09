@@ -28,6 +28,7 @@ export function LlmBackendField({
     <div className={compact ? 'settings-inline' : 'settings-block'}>
       <label htmlFor={id}>LLM Router (optional)</label>
       <select
+        className="dropdown-select"
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value as LLMBackendSelection)}
