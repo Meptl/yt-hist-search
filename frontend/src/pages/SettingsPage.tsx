@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 import { LlmBackendField } from '../components/LlmBackendField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
@@ -28,11 +30,35 @@ export function SettingsPage({
   onSetYoutubeDataApiKey,
   onBack
 }: SettingsPageProps) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onBack();
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onBack]);
+
   return (
     <div className="page">
       <main className="app-shell">
         <header className="hero">
-          <h1>Settings</h1>
+          <div className="hero-top">
+            <h1>Settings</h1>
+            <button
+              type="button"
+              className="icon-button settings-close-button"
+              aria-label="Close settings"
+              title="Close settings"
+              onClick={onBack}
+            >
+              X
+            </button>
+          </div>
         </header>
 
         <section className="query-panel settings-panel">
@@ -56,12 +82,6 @@ export function SettingsPage({
             onChange={onSetYoutubeDataApiKey}
             compact
           />
-
-          <div className="controls">
-            <button type="button" className="secondary-button" onClick={onBack}>
-              Back to search
-            </button>
-          </div>
         </section>
       </main>
     </div>

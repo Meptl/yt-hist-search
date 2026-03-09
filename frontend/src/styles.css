@@ -246,6 +246,12 @@ body {
   max-width: 720px;
 }
 
+.settings-close-button {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .settings-inline {
   display: grid;
   gap: 0.8rem;
