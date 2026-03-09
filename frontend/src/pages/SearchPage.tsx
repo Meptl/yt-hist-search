@@ -22,10 +22,8 @@ type ErrorPayload = {
 };
 
 type SearchPageProps = {
-  importing: boolean;
   importStatus: string | null;
   lastImportedPath: string | null;
-  onPickAndImport: () => Promise<void>;
   onOpenSettings: () => void;
 };
 
@@ -59,10 +57,8 @@ function extractFieldValue(text: string, label: string): string | null {
 }
 
 export function SearchPage({
-  importing,
   importStatus,
   lastImportedPath,
-  onPickAndImport,
   onOpenSettings
 }: SearchPageProps) {
   const [query, setQuery] = useState('videos about retrieval and embeddings');
@@ -158,8 +154,6 @@ export function SearchPage({
                 className="icon-button"
                 aria-label="Import from file"
                 title="Import from file"
-                onClick={() => void onPickAndImport()}
-                disabled={importing}
               >
                 <Plus aria-hidden="true" focusable="false" />
               </button>

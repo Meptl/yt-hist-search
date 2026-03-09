@@ -91,7 +91,6 @@ export function App() {
 
     const pickedPath = await window.ythist.pickTakeoutFile();
     if (!pickedPath) {
-      setImportStatus('Import canceled.');
       return;
     }
 
@@ -185,10 +184,8 @@ export function App() {
 
   return (
     <SearchPage
-      importing={importing}
       importStatus={importStatus}
       lastImportedPath={lastImportedPath}
-      onPickAndImport={onPickAndImport}
       onOpenSettings={() => setViewMode('settings')}
     />
   );
