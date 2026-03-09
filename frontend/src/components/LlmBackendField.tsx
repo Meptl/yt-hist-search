@@ -27,6 +27,11 @@ export function LlmBackendField({
   return (
     <div className={compact ? 'settings-inline' : 'settings-block'}>
       <label htmlFor={id}>LLM Router (optional)</label>
+      <p className="status-line">
+        Configure this to enable more sophisticated query handling such as date
+        filtering.
+      </p>
+
       <select
         className="dropdown-select"
         id={id}
@@ -41,11 +46,6 @@ export function LlmBackendField({
           </option>
         ))}
       </select>
-
-      <p className="status-line">
-        Configure this to enable more sophisticated query handling, such as date
-        filtering.
-      </p>
 
       {llmRouterCliWarning ? <p className="status-line warning-line">{llmRouterCliWarning}</p> : null}
       {settingsMessage ? <p className="status-line">{settingsMessage}</p> : null}

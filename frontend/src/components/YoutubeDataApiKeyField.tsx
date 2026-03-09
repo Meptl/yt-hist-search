@@ -52,6 +52,9 @@ export function YoutubeDataApiKeyField({
   return (
     <div className={compact ? 'settings-inline' : 'settings-block'}>
       <label htmlFor={id}>YouTube Data API key (optional)</label>
+      <p className="status-line">
+        We use a public API key, which can reach limits or be blocked. Using your own key improves indexing performance by enabling faster metadata lookups.
+      </p>
       <div className="input-with-icon">
         <input
           id={id}
@@ -90,9 +93,6 @@ export function YoutubeDataApiKeyField({
           )}
         </button>
       </div>
-      <p className="status-line">
-        Using your own key improves indexing performance by enabling faster metadata lookups.
-      </p>
     </div>
   );
 }
