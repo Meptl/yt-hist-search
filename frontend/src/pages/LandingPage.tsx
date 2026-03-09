@@ -153,18 +153,17 @@ export function LandingPage({
             onChange={onSetYoutubeDataApiKey}
           />
         </section>
+        <div className="landing-import-actions">
+          <button
+            type="button"
+            className="floating-import-button"
+            onClick={() => void triggerImport()}
+            disabled={!selectedTakeoutFile || importing}
+          >
+            {importing ? 'Importing...' : 'Import'}
+          </button>
+        </div>
       </main>
-
-      {selectedTakeoutFile ? (
-        <button
-          type="button"
-          className="floating-import-button"
-          onClick={() => void triggerImport()}
-          disabled={importing}
-        >
-          {importing ? 'Importing...' : 'Import'}
-        </button>
-      ) : null}
     </div>
   );
 }

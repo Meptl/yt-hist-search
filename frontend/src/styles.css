@@ -32,6 +32,11 @@ body {
   gap: 1.4rem;
 }
 
+.landing-import-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .hero {
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--edge);
@@ -273,9 +278,6 @@ body {
 }
 
 .floating-import-button {
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
   border: 0;
   border-radius: 999px;
   padding: 0.85rem 1.2rem;
@@ -283,14 +285,17 @@ body {
   font-weight: 700;
   color: #f7fff8;
   background: linear-gradient(130deg, var(--accent), #115e59);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
   cursor: pointer;
-  z-index: 20;
+  transition: background-color 120ms ease, opacity 120ms ease;
 }
 
 .floating-import-button:disabled {
-  opacity: 0.7;
-  cursor: progress;
+  color: #eef2ed;
+  background: #96a195;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .icon-button {
@@ -562,11 +567,6 @@ body {
   .icon-button {
     width: 40px;
     height: 40px;
-  }
-
-  .floating-import-button {
-    right: 1rem;
-    bottom: 1rem;
   }
 
   .results-list {
