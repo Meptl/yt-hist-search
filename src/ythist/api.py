@@ -189,6 +189,13 @@ def on_startup() -> None:
     def _warmup_worker() -> None:
         started = time.perf_counter()
         logger.info("timing startup.warmup start index_dir=%s", DEFAULT_INDEX_DIR)
+        if not index_ready(DEFAULT_INDEX_DIR):
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            logger.info(
+                "timing startup.warmup skipped elapsed_ms=%.2f reason=no_index",
+                elapsed_ms,
+            )
+            return
         try:
             warmup(index_dir=DEFAULT_INDEX_DIR)
             elapsed_ms = (time.perf_counter() - started) * 1000
