@@ -9,3 +9,5 @@ node_modules/
 # Project specific artifacts
 dev_assets/
 watch-history.html
+
+.env
