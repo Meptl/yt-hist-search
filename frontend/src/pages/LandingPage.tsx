@@ -74,6 +74,7 @@ export function LandingPage({
     <div className="page">
       <main className="app-shell">
         <section className="landing-panel">
+          <h1>Import your Google Takeout history</h1>
           <button
             type="button"
             className={`takeout-dropzone${isDraggingFile ? ' is-dragging' : ''}`}
@@ -93,11 +94,8 @@ export function LandingPage({
             className="sr-only"
             onChange={(event) => void handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
-          <h1>Import your Takeout history to begin</h1>
-          <p className="subtitle">
-            Select your Google Takeout <code>watch-history.html</code> file to start embedding and
-            indexing.
-          </p>
+
+          <h2>Additional Settings</h2>
 
           <LlmBackendField
             id="landing-llm-backend"
