@@ -1,4 +1,5 @@
 import { LlmBackendField } from '../components/LlmBackendField';
+import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
 import { type LLMBackendSelection } from '../hooks/useSettings';
 
@@ -12,7 +13,9 @@ type LandingPageProps = {
   settingsPath: string | null;
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
+  youtubeDataApiKey: string;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
+  onSetYoutubeDataApiKey: (next: string) => void;
   onPickAndImport: () => Promise<void>;
 };
 
@@ -26,7 +29,9 @@ export function LandingPage({
   settingsPath,
   settingsMessage,
   llmRouterCliWarning,
+  youtubeDataApiKey,
   onSetLlmBackend,
+  onSetYoutubeDataApiKey,
   onPickAndImport
 }: LandingPageProps) {
   return (
@@ -49,6 +54,14 @@ export function LandingPage({
             settingsMessage={settingsMessage}
             llmRouterCliWarning={llmRouterCliWarning}
             onChange={onSetLlmBackend}
+          />
+
+          <YoutubeDataApiKeyField
+            id="landing-youtube-data-api-key"
+            value={youtubeDataApiKey}
+            loading={settingsLoading}
+            saving={settingsSaving}
+            onChange={onSetYoutubeDataApiKey}
           />
 
           <button type="button" onClick={() => void onPickAndImport()} disabled={importing}>

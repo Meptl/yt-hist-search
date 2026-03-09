@@ -11,6 +11,7 @@ export function useSettings() {
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [llmRouterCliWarning, setLlmRouterCliWarning] = useState<string | null>(null);
   const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
+  const [youtubeDataApiKey, setYoutubeDataApiKeyState] = useState('');
   const saveRequestIdRef = useRef(0);
   const [llmBackendOptions, setLlmBackendOptions] = useState<LLMBackend[]>([
     'codex',
@@ -22,6 +23,7 @@ export function useSettings() {
   const applySettings = useCallback((settings: SettingsResponse) => {
     setLlmBackendState(settings.llm_router ?? 'none');
     setLlmBackendOptions(settings.llm_router_options);
+    setYoutubeDataApiKeyState(settings.youtube_data_api_key ?? '');
     setSettingsPath(settings.settings_path);
     setLlmRouterCliWarning(settings.llm_router_cli_warning);
   }, []);
@@ -75,15 +77,14 @@ export function useSettings() {
     };
   }, [applySettings]);
 
-  const persistLlmBackend = useCallback(async (next: LLMBackendSelection) => {
+  const persistSettings = useCallback(async (payload: Parameters<typeof updateSettings>[0]) => {
     const requestId = saveRequestIdRef.current + 1;
     saveRequestIdRef.current = requestId;
     setSettingsSaving(true);
     setSettingsMessage(null);
 
     try {
-      const selectedBackend = next === 'none' ? null : next;
-      const saved = await updateSettings(selectedBackend);
+      const saved = await updateSettings(payload);
       if (requestId !== saveRequestIdRef.current) {
         return;
       }
@@ -103,9 +104,21 @@ export function useSettings() {
   const setLlmBackend = useCallback(
     (next: LLMBackendSelection) => {
       setLlmBackendState(next);
-      void persistLlmBackend(next);
+      void persistSettings({
+        llm_router: next === 'none' ? null : next
+      });
     },
-    [persistLlmBackend]
+    [persistSettings]
+  );
+
+  const setYoutubeDataApiKey = useCallback(
+    (next: string) => {
+      setYoutubeDataApiKeyState(next);
+      void persistSettings({
+        youtube_data_api_key: next.trim() || null
+      });
+    },
+    [persistSettings]
   );
 
   return {
@@ -116,6 +129,8 @@ export function useSettings() {
     settingsPath,
     settingsMessage,
     llmRouterCliWarning,
+    youtubeDataApiKey,
     setLlmBackend,
+    setYoutubeDataApiKey
   };
 }

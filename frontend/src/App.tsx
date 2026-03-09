@@ -43,7 +43,9 @@ export function App() {
     settingsPath,
     settingsMessage,
     llmRouterCliWarning,
-    setLlmBackend
+    youtubeDataApiKey,
+    setLlmBackend,
+    setYoutubeDataApiKey
   } = useSettings();
 
   useEffect(() => {
@@ -181,7 +183,9 @@ export function App() {
         settingsPath={settingsPath}
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
+        youtubeDataApiKey={youtubeDataApiKey}
         onSetLlmBackend={setLlmBackend}
+        onSetYoutubeDataApiKey={setYoutubeDataApiKey}
         onPickAndImport={onPickAndImport}
       />
     );
@@ -197,7 +201,9 @@ export function App() {
         settingsPath={settingsPath}
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
+        youtubeDataApiKey={youtubeDataApiKey}
         onSetLlmBackend={setLlmBackend}
+        onSetYoutubeDataApiKey={setYoutubeDataApiKey}
         onBack={() => setViewMode('search')}
       />
     );

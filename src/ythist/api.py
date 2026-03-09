@@ -93,6 +93,7 @@ LLM_ROUTER_CLI_COMMANDS: dict[LLMRouter, str] = {
 class SettingsResponse(BaseModel):
     llm_router: LLMRouter | None = None
     llm_router_options: list[LLMRouter]
+    youtube_data_api_key: str | None = None
     settings_path: str
     llm_router_cli_warning: str | None = None
 
@@ -100,6 +101,7 @@ class SettingsResponse(BaseModel):
 class UpdateSettingsRequest(BaseModel):
     llm_router: LLMRouter | None = None
     llm_backend: LLMRouter | None = None
+    youtube_data_api_key: str | None = None
 
 
 def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
@@ -203,6 +205,7 @@ def get_settings_api_endpoint() -> SettingsResponse:
     response = SettingsResponse(
         llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
+        youtube_data_api_key=settings["youtube_data_api_key"],
         settings_path=str(settings_path()),
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
@@ -213,12 +216,28 @@ def get_settings_api_endpoint() -> SettingsResponse:
 
 @app.put("/api/settings", response_model=SettingsResponse)
 def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResponse:
-    selected_router = payload.llm_router if payload.llm_router is not None else payload.llm_backend
-    settings = save_settings(llm_router=selected_router)
+    current_settings = load_settings()
+    updates = payload.model_dump(exclude_unset=True)
+
+    selected_router = current_settings["llm_router"]
+    if "llm_router" in updates:
+        selected_router = updates["llm_router"]
+    elif "llm_backend" in updates:
+        selected_router = updates["llm_backend"]
+
+    youtube_data_api_key = current_settings["youtube_data_api_key"]
+    if "youtube_data_api_key" in updates:
+        youtube_data_api_key = updates["youtube_data_api_key"]
+
+    settings = save_settings(
+        llm_router=selected_router,
+        youtube_data_api_key=youtube_data_api_key,
+    )
     llm_router = settings["llm_router"]
     return SettingsResponse(
         llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
+        youtube_data_api_key=settings["youtube_data_api_key"],
         settings_path=str(settings_path()),
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )

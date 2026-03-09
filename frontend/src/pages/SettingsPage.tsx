@@ -1,4 +1,5 @@
 import { LlmBackendField } from '../components/LlmBackendField';
+import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
 import { type LLMBackendSelection } from '../hooks/useSettings';
 
@@ -10,7 +11,9 @@ type SettingsPageProps = {
   settingsPath: string | null;
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
+  youtubeDataApiKey: string;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
+  onSetYoutubeDataApiKey: (next: string) => void;
   onBack: () => void;
 };
 
@@ -22,7 +25,9 @@ export function SettingsPage({
   settingsPath,
   settingsMessage,
   llmRouterCliWarning,
+  youtubeDataApiKey,
   onSetLlmBackend,
+  onSetYoutubeDataApiKey,
   onBack
 }: SettingsPageProps) {
   return (
@@ -43,6 +48,15 @@ export function SettingsPage({
             settingsMessage={settingsMessage}
             llmRouterCliWarning={llmRouterCliWarning}
             onChange={onSetLlmBackend}
+            compact
+          />
+
+          <YoutubeDataApiKeyField
+            id="settings-youtube-data-api-key"
+            value={youtubeDataApiKey}
+            loading={settingsLoading}
+            saving={settingsSaving}
+            onChange={onSetYoutubeDataApiKey}
             compact
           />
 

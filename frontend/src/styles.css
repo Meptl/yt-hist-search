@@ -132,7 +132,9 @@ body {
 }
 
 .query-panel select,
-.settings-block select {
+.settings-block select,
+.settings-block input,
+.settings-inline input {
   width: 100%;
   border: 1px solid var(--edge);
   border-radius: 12px;
