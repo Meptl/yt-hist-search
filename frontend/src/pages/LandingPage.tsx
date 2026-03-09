@@ -7,7 +7,6 @@ import { type LLMBackendSelection } from '../hooks/useSettings';
 
 type LandingPageProps = {
   importing: boolean;
-  importStatus: string | null;
   llmBackend: LLMBackendSelection;
   llmBackendOptions: LLMBackend[];
   settingsLoading: boolean;
@@ -22,7 +21,6 @@ type LandingPageProps = {
 
 export function LandingPage({
   importing,
-  importStatus,
   llmBackend,
   llmBackendOptions,
   settingsLoading,
@@ -139,7 +137,6 @@ export function LandingPage({
             saving={settingsSaving}
             onChange={onSetYoutubeDataApiKey}
           />
-          <p className="status-line">{importStatus ?? 'No index detected yet.'}</p>
         </section>
       </main>
     </div>

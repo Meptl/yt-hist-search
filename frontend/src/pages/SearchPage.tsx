@@ -23,7 +23,6 @@ type ErrorPayload = {
 };
 
 type SearchPageProps = {
-  importStatus: string | null;
   lastImportedPath: string | null;
   onOpenSettings: () => void;
 };
@@ -57,11 +56,7 @@ function extractFieldValue(text: string, label: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
-export function SearchPage({
-  importStatus,
-  lastImportedPath,
-  onOpenSettings
-}: SearchPageProps) {
+export function SearchPage({ lastImportedPath, onOpenSettings }: SearchPageProps) {
   const [query, setQuery] = useState('videos about retrieval and embeddings');
   const [scoreThreshold, setScoreThreshold] = useState(0.55);
   const [loading, setLoading] = useState(false);
@@ -175,7 +170,6 @@ export function SearchPage({
               </button>
             </div>
           </div>
-          {importStatus ? <p className="status-line">{importStatus}</p> : null}
           {lastImportedPath ? <p className="status-line mono">{lastImportedPath}</p> : null}
         </header>
 

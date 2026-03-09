@@ -23,7 +23,6 @@ export function App() {
   const [checkingIndex, setCheckingIndex] = useState(true);
   const [indexReady, setIndexReady] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importStatus, setImportStatus] = useState<string | null>(null);
   const [lastImportedPath, setLastImportedPath] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('search');
 
@@ -73,9 +72,7 @@ export function App() {
         }
       } catch (err) {
         if (isActive) {
-          setImportStatus(
-            err instanceof Error ? err.message : 'Unexpected error while checking index status'
-          );
+          console.error('Failed to check index status', err);
           setIndexReady(false);
         }
       } finally {
@@ -99,7 +96,6 @@ export function App() {
 
   async function onImportTakeoutFile(file: File) {
     setImporting(true);
-    setImportStatus('Indexing started... this can take a few minutes.');
 
     try {
       const formData = new FormData();
@@ -119,15 +115,10 @@ export function App() {
 
       const details = payload as ImportResponse;
       setLastImportedPath(file.name);
-      setImportStatus(
-        `Imported ${details.parsed_entries} entries and indexed ${details.indexed_entries}.`
-      );
       setIndexReady(true);
       setViewMode('search');
     } catch (err) {
-      setImportStatus(
-        err instanceof Error ? err.message : 'Unexpected error while importing takeout'
-      );
+      console.error('Import takeout failed', err);
     } finally {
       setImporting(false);
     }
@@ -154,7 +145,6 @@ export function App() {
     return (
       <LandingPage
         importing={importing}
-        importStatus={importStatus}
         llmBackend={llmBackend}
         llmBackendOptions={llmBackendOptions}
         settingsLoading={settingsLoading}
@@ -188,7 +178,6 @@ export function App() {
 
   return (
     <SearchPage
-      importStatus={importStatus}
       lastImportedPath={lastImportedPath}
       onOpenSettings={() => setViewMode('settings')}
     />
