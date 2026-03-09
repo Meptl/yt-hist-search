@@ -25,7 +25,6 @@ export function YoutubeDataApiKeyField({
         spellCheck={false}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="AIza..."
         disabled={loading || saving}
       />
       <p className="status-line">
