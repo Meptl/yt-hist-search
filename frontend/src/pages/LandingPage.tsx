@@ -175,7 +175,11 @@ export function LandingPage({
             className="sr-only"
             onChange={(event) => void handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
-          <p className="status-line takeout-detected-note">{detectionMessage}</p>
+          <p
+            className={`status-line takeout-detected-note${detectedEntries === 0 ? ' is-error' : ''}`}
+          >
+            {detectionMessage}
+          </p>
 
           <h2>Additional Settings</h2>
 

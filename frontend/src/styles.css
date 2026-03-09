@@ -192,6 +192,10 @@ body {
   margin-top: -0.25rem;
 }
 
+.takeout-detected-note.is-error {
+  color: #b91c1c;
+}
+
 .warning-line {
   color: #9a3412;
 }
