@@ -14,6 +14,7 @@ type SearchResponseItem = {
 
 type SearchResponse = {
   query: string;
+  errors?: string[];
   results: SearchResponseItem[];
 };
 
@@ -65,6 +66,7 @@ export function SearchPage({
   const [scoreThreshold, setScoreThreshold] = useState(0.55);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [results, setResults] = useState<SearchResponseItem[]>([]);
 
   const hasResults = results.length > 0;
@@ -72,21 +74,24 @@ export function SearchPage({
   const summary = useMemo(() => {
     if (loading) return 'Searching your history...';
     if (error) return error;
+    if (warnings.length > 0) return `${warnings.length} warning${warnings.length === 1 ? '' : 's'}`;
     if (!hasResults) return 'Run a query to search your indexed watch history.';
     return `${results.length} results`;
-  }, [error, hasResults, loading, results.length]);
+  }, [error, hasResults, loading, results.length, warnings.length]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) {
       setError('Enter a query first.');
+      setWarnings([]);
       setResults([]);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setWarnings([]);
 
     try {
       const params = new URLSearchParams({
@@ -126,9 +131,11 @@ export function SearchPage({
         throw new Error(rawMessage || 'Unexpected response from search endpoint');
       }
 
+      setWarnings(Array.isArray(payload.errors) ? payload.errors : []);
       setResults(payload.results);
     } catch (err) {
       setResults([]);
+      setWarnings([]);
       setError(err instanceof Error ? err.message : 'Unexpected error while searching');
     } finally {
       setLoading(false);
@@ -207,33 +214,43 @@ export function SearchPage({
           </div>
 
           {hasResults ? (
-            <ul className="results-list">
-              {results.map((item, index) => {
-                const videoUrl = item.video_url ?? extractVideoUrl(item.text);
-                const thumbnailUrl = buildThumbnailUrl(item.video_id ?? null);
-                const decodedText = decodeHtmlEntities(item.text);
-                const fallbackTitle = extractFieldValue(decodedText, 'Title') ?? 'Untitled video';
-                const fallbackChannel =
-                  extractFieldValue(decodedText, 'Channel') ?? 'Unknown channel';
-                return (
-                  <YoutubeVideoCard
-                    key={`${item.file_path}-${index}`}
-                    item={item}
-                    index={index}
-                    videoUrl={videoUrl}
-                    thumbnailUrl={thumbnailUrl}
-                    fallbackTitle={fallbackTitle}
-                    fallbackChannel={fallbackChannel}
-                  />
-                );
-              })}
-            </ul>
+            <>
+              {warnings.length > 0 ? (
+                <div className="empty-state error-state">
+                  <pre>{warnings.join('\n')}</pre>
+                </div>
+              ) : null}
+              <ul className="results-list">
+                {results.map((item, index) => {
+                  const videoUrl = item.video_url ?? extractVideoUrl(item.text);
+                  const thumbnailUrl = buildThumbnailUrl(item.video_id ?? null);
+                  const decodedText = decodeHtmlEntities(item.text);
+                  const fallbackTitle = extractFieldValue(decodedText, 'Title') ?? 'Untitled video';
+                  const fallbackChannel =
+                    extractFieldValue(decodedText, 'Channel') ?? 'Unknown channel';
+                  return (
+                    <YoutubeVideoCard
+                      key={`${item.file_path}-${index}`}
+                      item={item}
+                      index={index}
+                      videoUrl={videoUrl}
+                      thumbnailUrl={thumbnailUrl}
+                      fallbackTitle={fallbackTitle}
+                      fallbackChannel={fallbackChannel}
+                    />
+                  );
+                })}
+              </ul>
+            </>
           ) : (
             <div className={`empty-state${error ? ' error-state' : ''}`}>
               {error ? (
                 <pre>{error}</pre>
               ) : (
-                <p>No results yet. Run a query to search your indexed history.</p>
+                <>
+                  {warnings.length > 0 ? <pre>{warnings.join('\n')}</pre> : null}
+                  <p>No results yet. Run a query to search your indexed history.</p>
+                </>
               )}
             </div>
           )}

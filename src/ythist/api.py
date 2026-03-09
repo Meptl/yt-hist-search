@@ -52,6 +52,7 @@ class SearchResponse(BaseModel):
     query: str
     original_query: str
     static_filters: dict[str, str]
+    errors: list[str]
     results: list[SearchResponseItem]
 
 
@@ -231,6 +232,7 @@ def search_api_endpoint(
     llm_router = settings["llm_router"]
     effective_query = q
     static_filters: dict[str, str] = {}
+    errors: list[str] = []
     time_filter: str | None = None
     if llm_router is not None:
         try:
@@ -240,9 +242,10 @@ def search_api_endpoint(
             )
             effective_query = routed.new_prompt
             static_filters = routed.static_filters
+            errors.extend(routed.errors)
             time_filter = static_filters.get("time")
         except LLMRouterError as exc:
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
+            errors.append(str(exc))
 
     try:
         hits = search(
@@ -251,9 +254,20 @@ def search_api_endpoint(
             score_threshold=score_threshold,
             time_filter=time_filter,
         )
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
+        if time_filter is not None:
+            errors.append(f"Ignoring unsupported time filter `{time_filter}`: {exc}")
+            static_filters.pop("time", None)
+            time_filter = None
+            hits = search(
+                query=effective_query,
+                index_dir=Path(index_dir),
+                score_threshold=score_threshold,
+                time_filter=None,
+            )
+        else:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     payload = [
@@ -272,6 +286,7 @@ def search_api_endpoint(
         query=effective_query,
         original_query=q,
         static_filters=static_filters,
+        errors=errors,
         results=payload,
     )
 

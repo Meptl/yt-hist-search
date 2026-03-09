@@ -9,8 +9,7 @@ from typing import Literal
 LLMRouter = Literal["codex", "claude", "gemini", "opencode"]
 
 _STATIC_FILTERS_SUPPORTED: tuple[str, ...] = (
-    "time (set key `time`; supported formats: `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, "
-    "`>=YYYY-MM-DD`, `<=YYYY-MM-DD`, or `YYYY-MM-DD..YYYY-MM-DD`)",
+    "time (supported formats: `YYYY`, `>=YYYY-MM-DD`, `<=YYYY-MM-DD`, or `YYYY-MM-DD..YYYY-MM-DD`)",
 )
 
 _DEFAULT_COMMAND_CANDIDATES: dict[LLMRouter, list[list[str]]] = {
@@ -29,6 +28,7 @@ class LLMRouterError(RuntimeError):
 class LLMRouterResult:
     new_prompt: str
     static_filters: dict[str, str]
+    errors: list[str]
     raw_response: str
 
 
@@ -44,14 +44,12 @@ def _build_router_prompt(user_query: str) -> str:
         '  "new_prompt": "PROMPT",\n'
         '  "static_filters": {\n'
         '    "FILTER_NAME": "FILTER_VALUE"\n'
-        "  }\n"
+        "  },\n"
+        '  "errors": ["OPTIONAL_ERROR"]\n'
         "}\n\n"
         "Requirements:\n"
+        "- Rewrite `new_prompt` as a concise keyword-focused retrieval query (remove filler words).\n"
         "- Remove discovered static filters from new_prompt.\n"
-        "- Put discovered supported static filters in static_filters.\n"
-        "- For time filtering, always use key `time` and one of the supported formats.\n"
-        "- Keep the request intent intact.\n"
-        "- If there are no supported static filters, return the original prompt (light cleanup is fine).\n"
         "- Do not include markdown fences.\n\n"
         f"User request:\n{user_query}"
     )
@@ -147,9 +145,16 @@ def rewrite_prompt_with_router(
                 for key, value in raw_filters.items()
                 if value is not None
             }
+            raw_errors = payload.get("errors", [])
+            if raw_errors is None:
+                raw_errors = []
+            if not isinstance(raw_errors, list):
+                raise LLMRouterError("LLM Router `errors` must be a JSON array.")
+            errors = [str(item).strip() for item in raw_errors if str(item).strip()]
             return LLMRouterResult(
                 new_prompt=new_prompt.strip(),
                 static_filters=static_filters,
+                errors=errors,
                 raw_response=raw_output,
             )
 

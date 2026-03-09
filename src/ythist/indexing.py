@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import calendar
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -39,7 +38,6 @@ _INDEX_MARKER_FILES = (
 )
 _TIME_EXPRESSION_RE = re.compile(r"^(>=|<=|>|<)\s*(.+)$")
 _YEAR_RE = re.compile(r"^\d{4}$")
-_YEAR_MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -60,7 +58,7 @@ class TimeBounds:
     end: datetime
 
 
-def _parse_time_token(token: str) -> TimeBounds:
+def _parse_time_token(token: str, *, allow_date: bool = False) -> TimeBounds:
     value = token.strip()
     if not value:
         raise ValueError("Time filter value cannot be empty.")
@@ -72,19 +70,7 @@ def _parse_time_token(token: str) -> TimeBounds:
             end=datetime(year, 12, 31, 23, 59, 59),
         )
 
-    if _YEAR_MONTH_RE.fullmatch(value):
-        year, month = value.split("-", maxsplit=1)
-        try:
-            month_int = int(month)
-            last_day = calendar.monthrange(int(year), month_int)[1]
-            return TimeBounds(
-                start=datetime(int(year), month_int, 1, 0, 0, 0),
-                end=datetime(int(year), month_int, last_day, 23, 59, 59),
-            )
-        except ValueError as exc:
-            raise ValueError(f"Invalid calendar month in time filter: `{value}`.") from exc
-
-    if _DATE_RE.fullmatch(value):
+    if allow_date and _DATE_RE.fullmatch(value):
         year, month, day = value.split("-", maxsplit=2)
         try:
             return TimeBounds(
@@ -94,16 +80,10 @@ def _parse_time_token(token: str) -> TimeBounds:
         except ValueError as exc:
             raise ValueError(f"Invalid calendar date in time filter: `{value}`.") from exc
 
-    try:
-        point = datetime.fromisoformat(value)
-    except ValueError as exc:
-        raise ValueError(
-            "Unsupported time filter format. Use one of: "
-            "`YYYY`, `YYYY-MM`, `YYYY-MM-DD`, "
-            "`>=YYYY-MM-DD`, `<=YYYY-MM-DD`, or `YYYY-MM-DD..YYYY-MM-DD`."
-        ) from exc
-
-    return TimeBounds(start=point, end=point)
+    raise ValueError(
+        "Unsupported time filter format. Use one of: "
+        "`YYYY`, `>=YYYY-MM-DD`, `<=YYYY-MM-DD`, or `YYYY-MM-DD..YYYY-MM-DD`."
+    )
 
 
 def _time_filter_to_metadata_filters(time_filter: str) -> MetadataFilters:
@@ -113,8 +93,8 @@ def _time_filter_to_metadata_filters(time_filter: str) -> MetadataFilters:
 
     if ".." in expression:
         lower_raw, upper_raw = expression.split("..", maxsplit=1)
-        lower = _parse_time_token(lower_raw).start
-        upper = _parse_time_token(upper_raw).end
+        lower = _parse_time_token(lower_raw, allow_date=True).start
+        upper = _parse_time_token(upper_raw, allow_date=True).end
         if lower > upper:
             raise ValueError("Time filter start is after end.")
         return MetadataFilters(
@@ -135,7 +115,7 @@ def _time_filter_to_metadata_filters(time_filter: str) -> MetadataFilters:
     op_match = _TIME_EXPRESSION_RE.fullmatch(expression)
     if op_match:
         op_token, raw_value = op_match.groups()
-        bounds = _parse_time_token(raw_value)
+        bounds = _parse_time_token(raw_value, allow_date=True)
         if op_token == ">=":
             operator = FilterOperator.GTE
             value = bounds.start.isoformat()
