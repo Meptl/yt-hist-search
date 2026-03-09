@@ -40,7 +40,6 @@ export function App() {
     llmBackendOptions,
     settingsLoading,
     settingsSaving,
-    settingsPath,
     settingsMessage,
     llmRouterCliWarning,
     youtubeDataApiKey,
@@ -180,7 +179,6 @@ export function App() {
         llmBackendOptions={llmBackendOptions}
         settingsLoading={settingsLoading}
         settingsSaving={settingsSaving}
-        settingsPath={settingsPath}
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
         youtubeDataApiKey={youtubeDataApiKey}
@@ -198,7 +196,6 @@ export function App() {
         llmBackendOptions={llmBackendOptions}
         settingsLoading={settingsLoading}
         settingsSaving={settingsSaving}
-        settingsPath={settingsPath}
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
         youtubeDataApiKey={youtubeDataApiKey}

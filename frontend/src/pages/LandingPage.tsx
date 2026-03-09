@@ -10,7 +10,6 @@ type LandingPageProps = {
   llmBackendOptions: LLMBackend[];
   settingsLoading: boolean;
   settingsSaving: boolean;
-  settingsPath: string | null;
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
   youtubeDataApiKey: string;
@@ -26,7 +25,6 @@ export function LandingPage({
   llmBackendOptions,
   settingsLoading,
   settingsSaving,
-  settingsPath,
   settingsMessage,
   llmRouterCliWarning,
   youtubeDataApiKey,
@@ -50,7 +48,6 @@ export function LandingPage({
             options={llmBackendOptions}
             loading={settingsLoading}
             saving={settingsSaving}
-            settingsPath={settingsPath}
             settingsMessage={settingsMessage}
             llmRouterCliWarning={llmRouterCliWarning}
             onChange={onSetLlmBackend}

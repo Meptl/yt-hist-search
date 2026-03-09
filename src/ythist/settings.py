@@ -11,10 +11,6 @@ _SETTINGS_DIR = Path.home() / ".local" / "share" / "ythist"
 _SETTINGS_PATH = _SETTINGS_DIR / "settings.json"
 
 
-def settings_path() -> Path:
-    return _SETTINGS_PATH
-
-
 def default_settings() -> dict[str, LLMRouter | str | None]:
     return {
         "llm_router": None,

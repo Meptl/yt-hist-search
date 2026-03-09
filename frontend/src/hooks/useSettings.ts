@@ -7,7 +7,6 @@ export type LLMBackendSelection = LLMBackend | 'none';
 export function useSettings() {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsSaving, setSettingsSaving] = useState(false);
-  const [settingsPath, setSettingsPath] = useState<string | null>(null);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [llmRouterCliWarning, setLlmRouterCliWarning] = useState<string | null>(null);
   const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
@@ -24,7 +23,6 @@ export function useSettings() {
     setLlmBackendState(settings.llm_router ?? 'none');
     setLlmBackendOptions(settings.llm_router_options);
     setYoutubeDataApiKeyState(settings.youtube_data_api_key ?? '');
-    setSettingsPath(settings.settings_path);
     setLlmRouterCliWarning(settings.llm_router_cli_warning);
   }, []);
 
@@ -126,7 +124,6 @@ export function useSettings() {
     llmBackendOptions,
     settingsLoading,
     settingsSaving,
-    settingsPath,
     settingsMessage,
     llmRouterCliWarning,
     youtubeDataApiKey,

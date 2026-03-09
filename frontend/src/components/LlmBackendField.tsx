@@ -7,7 +7,6 @@ type LlmBackendFieldProps = {
   options: LLMBackend[];
   loading: boolean;
   saving: boolean;
-  settingsPath: string | null;
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
   onChange: (next: LLMBackendSelection) => void;
@@ -20,7 +19,6 @@ export function LlmBackendField({
   options,
   loading,
   saving,
-  settingsPath,
   settingsMessage,
   llmRouterCliWarning,
   onChange,
@@ -48,7 +46,6 @@ export function LlmBackendField({
         filtering.
       </p>
 
-      {settingsPath ? <p className="status-line mono">{settingsPath}</p> : null}
       {llmRouterCliWarning ? <p className="status-line warning-line">{llmRouterCliWarning}</p> : null}
       {settingsMessage ? <p className="status-line">{settingsMessage}</p> : null}
     </div>

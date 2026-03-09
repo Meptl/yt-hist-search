@@ -31,7 +31,6 @@ from ythist.settings import (
     LLM_ROUTER_OPTIONS,
     load_settings,
     save_settings,
-    settings_path,
 )
 from ythist.llm_router import LLMRouterError, rewrite_prompt_with_router
 
@@ -94,7 +93,6 @@ class SettingsResponse(BaseModel):
     llm_router: LLMRouter | None = None
     llm_router_options: list[LLMRouter]
     youtube_data_api_key: str | None = None
-    settings_path: str
     llm_router_cli_warning: str | None = None
 
 
@@ -206,7 +204,6 @@ def get_settings_api_endpoint() -> SettingsResponse:
         llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
         youtube_data_api_key=settings["youtube_data_api_key"],
-        settings_path=str(settings_path()),
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
     elapsed_ms = (time.perf_counter() - started) * 1000
@@ -238,7 +235,6 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
         llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
         youtube_data_api_key=settings["youtube_data_api_key"],
-        settings_path=str(settings_path()),
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
 

@@ -4,7 +4,6 @@ export type SettingsResponse = {
   llm_router: LLMBackend | null;
   llm_router_options: LLMBackend[];
   youtube_data_api_key: string | null;
-  settings_path: string;
   llm_router_cli_warning: string | null;
 };
 
