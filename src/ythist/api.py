@@ -6,6 +6,7 @@ import logging
 import shutil
 import time
 import json
+import traceback
 from pathlib import Path
 from threading import Thread
 
@@ -67,6 +68,11 @@ class ImportTakeoutResponse(BaseModel):
     indexed_entries: int
     csv_out: str
     index_dir: str
+
+
+class ImportErrorDetail(BaseModel):
+    message: str
+    stack_trace: str | None = None
 
 
 class ImportTakeoutPathRequest(BaseModel):
@@ -138,7 +144,13 @@ def _run_import_from_takeout_path(
     try:
         entries = parse_watch_history(takeout_path)
     except (ValueError, json.JSONDecodeError) as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=400,
+            detail=ImportErrorDetail(
+                message=str(exc),
+                stack_trace="".join(traceback.format_exception(exc)),
+            ).model_dump(),
+        ) from exc
     if not entries:
         raise HTTPException(
             status_code=400,
@@ -159,10 +171,13 @@ def _run_import_from_takeout_path(
         except Exception as exc:
             raise HTTPException(
                 status_code=500,
-                detail=(
-                    "Indexing failed. Ensure internet access is available once for "
-                    f"embedding model download. Original error: {exc}"
-                ),
+                detail=ImportErrorDetail(
+                    message=(
+                        "Indexing failed. Ensure internet access is available once for "
+                        f"embedding model download. Original error: {exc}"
+                    ),
+                    stack_trace="".join(traceback.format_exception(exc)),
+                ).model_dump(),
             ) from exc
 
     return ImportTakeoutResponse(
@@ -365,7 +380,13 @@ async def import_takeout_api_endpoint(
     file_name = Path(file.filename or "watch-history.html").name
     file_suffix = Path(file_name).suffix.lower()
     if file_suffix not in {".html", ".htm", ".json"}:
-        raise HTTPException(status_code=400, detail="Expected a .html/.htm/.json takeout file")
+        raise HTTPException(
+            status_code=400,
+            detail=ImportErrorDetail(
+                message="Expected a .html/.htm/.json takeout file",
+                stack_trace=None,
+            ).model_dump(),
+        )
 
     data_path = Path(data_dir)
     index_path = Path(index_dir)
@@ -383,6 +404,17 @@ async def import_takeout_api_endpoint(
             skip_index=skip_index,
             youtube_data_api_key=load_settings()["youtube_data_api_key"],
         )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Unhandled import-takeout error")
+        raise HTTPException(
+            status_code=500,
+            detail=ImportErrorDetail(
+                message=f"Import failed unexpectedly: {exc}",
+                stack_trace="".join(traceback.format_exception(exc)),
+            ).model_dump(),
+        ) from exc
     finally:
         try:
             os.remove(temp_file_path)
@@ -398,16 +430,31 @@ def import_takeout_path_api_endpoint(
     if not takeout_path:
         raise HTTPException(
             status_code=400,
-            detail="Expected `takeout_path` (or legacy `html_path`) in request body.",
+            detail=ImportErrorDetail(
+                message="Expected `takeout_path` (or legacy `html_path`) in request body.",
+                stack_trace=None,
+            ).model_dump(),
         )
     current_settings = load_settings()
-    return _run_import_from_takeout_path(
-        takeout_path=Path(takeout_path),
-        index_dir=Path(payload.index_dir),
-        data_dir=Path(payload.data_dir),
-        skip_index=payload.skip_index,
-        youtube_data_api_key=current_settings["youtube_data_api_key"],
-    )
+    try:
+        return _run_import_from_takeout_path(
+            takeout_path=Path(takeout_path),
+            index_dir=Path(payload.index_dir),
+            data_dir=Path(payload.data_dir),
+            skip_index=payload.skip_index,
+            youtube_data_api_key=current_settings["youtube_data_api_key"],
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Unhandled import-takeout-path error")
+        raise HTTPException(
+            status_code=500,
+            detail=ImportErrorDetail(
+                message=f"Import failed unexpectedly: {exc}",
+                stack_trace="".join(traceback.format_exception(exc)),
+            ).model_dump(),
+        ) from exc
 
 
 @app.get("/search")

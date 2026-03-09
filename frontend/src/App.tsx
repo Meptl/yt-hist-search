@@ -12,6 +12,17 @@ type ImportResponse = {
   index_dir: string;
 };
 
+type ImportApiErrorDetail = {
+  message?: string;
+  stack_trace?: string | null;
+};
+
+type ImportErrorDetails = {
+  message: string;
+  stackTrace: string | null;
+  statusCode: number | null;
+};
+
 type IndexStatusResponse = {
   index_ready: boolean;
   index_dir: string;
@@ -19,11 +30,49 @@ type IndexStatusResponse = {
 
 type ViewMode = 'search' | 'settings';
 
+function parseImportError(
+  payload: unknown,
+  statusCode: number | null,
+  fallbackMessage = 'Import request failed'
+): ImportErrorDetails {
+  const fallback: ImportErrorDetails = {
+    message: fallbackMessage,
+    stackTrace: null,
+    statusCode
+  };
+
+  if (!payload || typeof payload !== 'object') {
+    return fallback;
+  }
+
+  const detail = (payload as { detail?: unknown }).detail;
+  if (typeof detail === 'string') {
+    return {
+      message: detail,
+      stackTrace: null,
+      statusCode
+    };
+  }
+
+  if (detail && typeof detail === 'object') {
+    const details = detail as ImportApiErrorDetail;
+    if (typeof details.message === 'string' && details.message.trim().length > 0) {
+      return {
+        message: details.message,
+        stackTrace: typeof details.stack_trace === 'string' ? details.stack_trace : null,
+        statusCode
+      };
+    }
+  }
+
+  return fallback;
+}
+
 export function App() {
   const [checkingIndex, setCheckingIndex] = useState(true);
   const [indexReady, setIndexReady] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
+  const [importError, setImportError] = useState<ImportErrorDetails | null>(null);
   const [lastImportedPath, setLastImportedPath] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('search');
 
@@ -109,10 +158,10 @@ export function App() {
         body: formData
       });
 
-      const payload = (await response.json()) as ImportResponse | { detail: string };
+      const payload = (await response.json()) as unknown;
       if (!response.ok) {
-        const detail = 'detail' in payload ? payload.detail : 'Import request failed';
-        throw new Error(detail);
+        setImportError(parseImportError(payload, response.status));
+        return false;
       }
 
       const details = payload as ImportResponse;
@@ -123,9 +172,17 @@ export function App() {
     } catch (err) {
       console.error('Import takeout failed', err);
       if (err instanceof Error && err.message.trim().length > 0) {
-        setImportError(err.message);
+        setImportError({
+          message: err.message,
+          stackTrace: err.stack ?? null,
+          statusCode: null
+        });
       } else {
-        setImportError('That file does not look like a Google Takeout watch history file.');
+        setImportError({
+          message: 'That file does not look like a Google Takeout watch history file.',
+          stackTrace: null,
+          statusCode: null
+        });
       }
       return false;
     } finally {

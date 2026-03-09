@@ -5,6 +5,12 @@ import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
 import { type LLMBackendSelection } from '../hooks/useSettings';
 
+type ImportErrorDetails = {
+  message: string;
+  stackTrace: string | null;
+  statusCode: number | null;
+};
+
 type LandingPageProps = {
   importing: boolean;
   llmBackend: LLMBackendSelection;
@@ -14,7 +20,7 @@ type LandingPageProps = {
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
   youtubeDataApiKey: string;
-  importError: string | null;
+  importError: ImportErrorDetails | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
   onImportTakeoutFile: (file: File) => Promise<boolean>;
@@ -139,11 +145,6 @@ export function LandingPage({
             className="sr-only"
             onChange={(event) => handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
-          {importError ? (
-            <p className="status-line warning-line import-error" role="alert">
-              {importError}
-            </p>
-          ) : null}
 
           <h2>Additional Settings</h2>
 
@@ -167,6 +168,20 @@ export function LandingPage({
           />
         </section>
         <div className="landing-import-actions">
+          {importError ? (
+            <details className="import-error-dropdown" role="status">
+              <summary className="import-error-toggle">Failed import</summary>
+              <div className="import-error-dropdown-body">
+                <p className="import-error-message">{importError.message}</p>
+                {importError.statusCode ? (
+                  <p className="status-line mono">HTTP {importError.statusCode}</p>
+                ) : null}
+                {importError.stackTrace ? <pre>{importError.stackTrace}</pre> : null}
+              </div>
+            </details>
+          ) : (
+            <div className="import-error-placeholder" aria-hidden="true" />
+          )}
           <button
             type="button"
             className="floating-import-button"
