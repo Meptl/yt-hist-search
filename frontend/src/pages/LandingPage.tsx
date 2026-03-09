@@ -75,6 +75,30 @@ export function LandingPage({
       <main className="app-shell">
         <section className="landing-panel">
           <h1>Import your Google Takeout history</h1>
+          <section className="takeout-instructions" aria-label="Google Takeout instructions">
+            <h2>Get your file from Google Takeout</h2>
+            <ol>
+              <li>
+                Open{' '}
+                <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">
+                  Google Takeout
+                </a>{' '}
+                and select only <strong>YouTube and YouTube Music</strong>.
+              </li>
+              <li>
+                In the YouTube options, ensure <strong>history</strong> is included and choose{' '}
+                <strong>HTML format</strong>.
+              </li>
+              <li>
+                Create the export and download the archive when Google notifies you that it is
+                ready.
+              </li>
+              <li>
+                Extract the archive and find <code>watch-history.html</code> (usually under
+                <code>Takeout/YouTube and YouTube Music/history/</code>).
+              </li>
+            </ol>
+          </section>
           <button
             type="button"
             className={`takeout-dropzone${isDraggingFile ? ' is-dragging' : ''}`}

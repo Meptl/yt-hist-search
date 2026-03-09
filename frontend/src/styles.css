@@ -56,6 +56,35 @@ body {
   gap: 0.95rem;
 }
 
+.takeout-instructions {
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  background: color-mix(in srgb, var(--bg) 70%, #ffffff 30%);
+}
+
+.takeout-instructions h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.takeout-instructions ol {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+  color: var(--muted);
+}
+
+.takeout-instructions code {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+.takeout-instructions a {
+  color: color-mix(in srgb, var(--accent) 85%, #073a37 15%);
+}
+
 .takeout-dropzone {
   min-height: 190px;
   border: 2px dashed color-mix(in srgb, var(--accent) 65%, #ffffff 35%);
