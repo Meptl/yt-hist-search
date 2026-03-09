@@ -111,8 +111,7 @@ def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
         return None
 
     return (
-        f"`{cli_command}` CLI was not found in PATH. Install it or add it to PATH "
-        "to use this LLM Router."
+        f"`{cli_command}` CLI was not found in PATH."
     )
 
 
