@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from llama_index.core import Document
+from ythist.youtube_metadata import fetch_video_metadata_map
 
 ENTRY_RE = re.compile(
     r'<div class="content-cell mdl-cell mdl-cell--6-col mdl-typography--body-1">'
@@ -101,18 +102,47 @@ def parse_watch_history_html(html_path: Path) -> list[WatchEntry]:
     return results
 
 
-def to_llama_documents(entries: list[WatchEntry]) -> list[Document]:
+def to_llama_documents(
+    entries: list[WatchEntry],
+    *,
+    youtube_data_api_key: str | None = None,
+) -> list[Document]:
     deduped_entries = dedupe_entries_by_video_id(entries)
+    metadata_by_video_id = (
+        fetch_video_metadata_map(
+            api_key=youtube_data_api_key,
+            video_ids=[entry.video_id for entry in deduped_entries],
+        )
+        if youtube_data_api_key
+        else {}
+    )
     docs: list[Document] = []
     for entry in deduped_entries:
-        text = "\n".join(
-            [
-                f"Title: {entry.title}",
-                f"Channel: {entry.channel_name}",
-                f"Watched At: {entry.watched_at_raw}",
-                f"Video URL: {entry.video_url}",
-            ]
+        video_metadata = metadata_by_video_id.get(entry.video_id)
+        tags = list(video_metadata.tags) if video_metadata is not None else []
+        topic_categories = (
+            list(video_metadata.topic_categories) if video_metadata is not None else []
         )
+        description = (
+            video_metadata.description.strip()
+            if video_metadata is not None and video_metadata.description
+            else ""
+        )
+        text_lines = [
+            f"Title: {entry.title}",
+            f"Channel: {entry.channel_name}",
+        ]
+        if description:
+            text_lines.append(f"Description: {description}")
+        if tags:
+            text_lines.append(f"Tags: {', '.join(tags)}")
+        if topic_categories:
+            text_lines.append(f"Topic Categories: {', '.join(topic_categories)}")
+        text = "\n".join(text_lines)
+        published_at = (
+            video_metadata.published_at if video_metadata is not None else None
+        )
+        view_count = video_metadata.view_count if video_metadata is not None else None
         docs.append(
             Document(
                 text=text,
@@ -123,8 +153,13 @@ def to_llama_documents(entries: list[WatchEntry]) -> list[Document]:
                     "title": entry.title,
                     "channel_name": entry.channel_name,
                     "channel_url": entry.channel_url,
+                    "watchedAt": entry.watched_at_iso,
+                    "publishedAt": published_at,
+                    "statistics.viewCount": view_count,
                     "watched_at_raw": entry.watched_at_raw,
                     "watched_at_iso": entry.watched_at_iso,
+                    "published_at": published_at,
+                    "view_count": view_count,
                 },
             )
         )

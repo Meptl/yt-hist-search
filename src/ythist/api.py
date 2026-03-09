@@ -121,6 +121,7 @@ def _run_import_from_html_path(
     index_dir: Path,
     data_dir: Path,
     skip_index: bool,
+    youtube_data_api_key: str | None,
 ) -> ImportTakeoutResponse:
     if not html_path.exists() or not html_path.is_file():
         raise HTTPException(status_code=400, detail=f"File not found: {html_path}")
@@ -142,7 +143,10 @@ def _run_import_from_html_path(
 
     indexed_entries = 0
     if not skip_index:
-        docs = to_llama_documents(entries)
+        docs = to_llama_documents(
+            entries,
+            youtube_data_api_key=youtube_data_api_key,
+        )
         try:
             indexed_entries = ingest_documents(docs, index_dir=index_dir)
         except Exception as exc:
@@ -362,6 +366,7 @@ async def import_takeout_api_endpoint(
             index_dir=index_path,
             data_dir=data_path,
             skip_index=skip_index,
+            youtube_data_api_key=load_settings()["youtube_data_api_key"],
         )
     finally:
         try:
@@ -374,11 +379,13 @@ async def import_takeout_api_endpoint(
 def import_takeout_path_api_endpoint(
     payload: ImportTakeoutPathRequest,
 ) -> ImportTakeoutResponse:
+    current_settings = load_settings()
     return _run_import_from_html_path(
         html_path=Path(payload.html_path),
         index_dir=Path(payload.index_dir),
         data_dir=Path(payload.data_dir),
         skip_index=payload.skip_index,
+        youtube_data_api_key=current_settings["youtube_data_api_key"],
     )
 
 

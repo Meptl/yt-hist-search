@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import uvicorn
@@ -42,6 +43,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--skip-index",
         action="store_true",
         help="Only export CSV and do not build vector index",
+    )
+    import_takeout_cmd.add_argument(
+        "--youtube-data-api-key",
+        default=os.getenv("YOUTUBE_API_KEY"),
+        help=(
+            "YouTube Data API key for enrichment. "
+            "Defaults to env var YOUTUBE_API_KEY when set."
+        ),
     )
 
     search_cmd = sub.add_parser("search", help="Run semantic search")
@@ -100,7 +109,10 @@ def _cmd_import_takeout(args: argparse.Namespace) -> None:
     if args.skip_index:
         return
 
-    docs = to_llama_documents(entries)
+    docs = to_llama_documents(
+        entries,
+        youtube_data_api_key=args.youtube_data_api_key,
+    )
     try:
         indexed = ingest_documents(docs, index_dir=Path(args.index_dir))
     except Exception as exc:
