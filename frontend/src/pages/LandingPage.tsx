@@ -1,3 +1,5 @@
+import { useRef, useState, type DragEvent } from 'react';
+
 import { LlmBackendField } from '../components/LlmBackendField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
@@ -15,7 +17,7 @@ type LandingPageProps = {
   youtubeDataApiKey: string;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
-  onPickAndImport: () => Promise<void>;
+  onImportTakeoutFile: (file: File) => Promise<void>;
 };
 
 export function LandingPage({
@@ -30,12 +32,67 @@ export function LandingPage({
   youtubeDataApiKey,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
-  onPickAndImport
+  onImportTakeoutFile
 }: LandingPageProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  function handleDropZoneClick() {
+    if (importing) {
+      return;
+    }
+    fileInputRef.current?.click();
+  }
+
+  async function handleSelectedFile(file: File | null) {
+    if (!file || importing) {
+      return;
+    }
+    await onImportTakeoutFile(file);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    if (!isDraggingFile) {
+      setIsDraggingFile(true);
+    }
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setIsDraggingFile(false);
+  }
+
+  async function handleDrop(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setIsDraggingFile(false);
+    const file = event.dataTransfer.files.item(0);
+    await handleSelectedFile(file);
+  }
+
   return (
     <div className="page">
       <main className="app-shell">
         <section className="landing-panel">
+          <button
+            type="button"
+            className={`takeout-dropzone${isDraggingFile ? ' is-dragging' : ''}`}
+            onClick={handleDropZoneClick}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={(event) => void handleDrop(event)}
+            disabled={importing}
+          >
+            <span>{importing ? 'Importing and indexing...' : 'Drop watch-history.html here'}</span>
+            {!importing && <small>or click to choose a file</small>}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".html,.htm,text/html"
+            className="sr-only"
+            onChange={(event) => void handleSelectedFile(event.target.files?.item(0) ?? null)}
+          />
           <h1>Import your Takeout history to begin</h1>
           <p className="subtitle">
             Select your Google Takeout <code>watch-history.html</code> file to start embedding and
@@ -60,10 +117,6 @@ export function LandingPage({
             saving={settingsSaving}
             onChange={onSetYoutubeDataApiKey}
           />
-
-          <button type="button" onClick={() => void onPickAndImport()} disabled={importing}>
-            {importing ? 'Importing and indexing...' : 'Choose watch-history.html'}
-          </button>
           <p className="status-line">{importStatus ?? 'No index detected yet.'}</p>
         </section>
       </main>

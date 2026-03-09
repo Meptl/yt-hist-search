@@ -5,14 +5,6 @@ import { LandingPage } from './pages/LandingPage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 
-declare global {
-  interface Window {
-    ythist?: {
-      pickTakeoutFile: () => Promise<string | null>;
-    };
-  }
-}
-
 type ImportResponse = {
   parsed_entries: number;
   indexed_entries: number;
@@ -105,30 +97,18 @@ export function App() {
     };
   }, []);
 
-  async function onPickAndImport() {
-    if (!window.ythist?.pickTakeoutFile) {
-      setImportStatus('Native file picker unavailable. Launch the UI via Electron.');
-      return;
-    }
-
-    const pickedPath = await window.ythist.pickTakeoutFile();
-    if (!pickedPath) {
-      return;
-    }
-
+  async function onImportTakeoutFile(file: File) {
     setImporting(true);
     setImportStatus('Indexing started... this can take a few minutes.');
 
     try {
-      const response = await fetch('/api/import-takeout-path', {
+      const formData = new FormData();
+      formData.set('file', file);
+      formData.set('skip_index', 'false');
+
+      const response = await fetch('/api/import-takeout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          html_path: pickedPath,
-          skip_index: false
-        })
+        body: formData
       });
 
       const payload = (await response.json()) as ImportResponse | { detail: string };
@@ -138,7 +118,7 @@ export function App() {
       }
 
       const details = payload as ImportResponse;
-      setLastImportedPath(pickedPath);
+      setLastImportedPath(file.name);
       setImportStatus(
         `Imported ${details.parsed_entries} entries and indexed ${details.indexed_entries}.`
       );
@@ -184,7 +164,7 @@ export function App() {
         youtubeDataApiKey={youtubeDataApiKey}
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
-        onPickAndImport={onPickAndImport}
+        onImportTakeoutFile={onImportTakeoutFile}
       />
     );
   }
