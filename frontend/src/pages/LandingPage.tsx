@@ -108,7 +108,10 @@ export function LandingPage({
 
   const canImport = !!selectedTakeoutFile && detectedEntries !== null && detectedEntries > 0;
 
-  const detectionMessage = `Detected ${detectedEntries} entr${detectedEntries === 1 ? 'y' : 'ies'}.`;
+  const detectionMessage =
+    selectedTakeoutFile && detectedEntries !== null
+      ? `Detected ${detectedEntries} entr${detectedEntries === 1 ? 'y' : 'ies'}.`
+      : null;
 
   return (
     <div className="page">
@@ -165,11 +168,13 @@ export function LandingPage({
             className="sr-only"
             onChange={(event) => void handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
-          <p
-            className={`status-line takeout-detected-note${detectedEntries === 0 ? ' is-error' : ''}`}
-          >
-            {detectionMessage}
-          </p>
+          {detectionMessage ? (
+            <p
+              className={`status-line takeout-detected-note${detectedEntries === 0 ? ' is-error' : ''}`}
+            >
+              {detectionMessage}
+            </p>
+          ) : null}
 
           <h2>Additional Settings</h2>
 
