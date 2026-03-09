@@ -28,10 +28,24 @@ export function useSettings() {
 
   useEffect(() => {
     let isActive = true;
+    const effectStarted = performance.now();
+    console.info(
+      `[timing] useSettings effect start at ${new Date().toISOString()} (perf=${effectStarted.toFixed(2)}ms)`
+    );
 
     async function loadSettings() {
+      const requestStarted = performance.now();
+      console.info(
+        `[timing] /api/settings fetch start at ${new Date().toISOString()} (+${(
+          requestStarted - effectStarted
+        ).toFixed(2)}ms since useSettings effect start)`
+      );
       try {
         const settings = await fetchSettings();
+        const responseTime = performance.now();
+        console.info(
+          `[timing] /api/settings fetch complete duration=${(responseTime - requestStarted).toFixed(2)}ms`
+        );
         if (!isActive) {
           return;
         }
@@ -45,6 +59,11 @@ export function useSettings() {
       } finally {
         if (isActive) {
           setSettingsLoading(false);
+          console.info(
+            `[timing] settingsLoading=false at ${new Date().toISOString()} (+${(
+              performance.now() - effectStarted
+            ).toFixed(2)}ms since useSettings effect start)`
+          );
         }
       }
     }

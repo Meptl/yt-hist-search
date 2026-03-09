@@ -4,6 +4,7 @@ import os
 import tempfile
 import logging
 import shutil
+import time
 from pathlib import Path
 from threading import Thread
 
@@ -175,10 +176,15 @@ def _frontend_dist_dir() -> Path:
 @app.on_event("startup")
 def on_startup() -> None:
     def _warmup_worker() -> None:
+        started = time.perf_counter()
+        logger.info("timing startup.warmup start index_dir=%s", DEFAULT_INDEX_DIR)
         try:
             warmup(index_dir=DEFAULT_INDEX_DIR)
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            logger.info("timing startup.warmup done elapsed_ms=%.2f", elapsed_ms)
         except Exception:
-            logger.exception("Startup warmup failed")
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            logger.exception("Startup warmup failed elapsed_ms=%.2f", elapsed_ms)
 
     thread = Thread(target=_warmup_worker, daemon=True)
     thread.start()
@@ -191,14 +197,18 @@ def health() -> dict[str, str]:
 
 @app.get("/api/settings", response_model=SettingsResponse)
 def get_settings_api_endpoint() -> SettingsResponse:
+    started = time.perf_counter()
     settings = load_settings()
     llm_router = settings["llm_router"]
-    return SettingsResponse(
+    response = SettingsResponse(
         llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
         settings_path=str(settings_path()),
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    logger.info("timing api.settings elapsed_ms=%.2f", elapsed_ms)
+    return response
 
 
 @app.put("/api/settings", response_model=SettingsResponse)
@@ -218,8 +228,17 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
 def index_status_api_endpoint(
     index_dir: str = str(DEFAULT_INDEX_DIR),
 ) -> IndexStatusResponse:
+    started = time.perf_counter()
     index_path = Path(index_dir)
-    return IndexStatusResponse(index_ready=index_ready(index_path), index_dir=str(index_path))
+    ready = index_ready(index_path)
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    logger.info(
+        "timing api.index-status elapsed_ms=%.2f index_ready=%s index_dir=%s",
+        elapsed_ms,
+        ready,
+        index_path,
+    )
+    return IndexStatusResponse(index_ready=ready, index_dir=str(index_path))
 
 
 @app.get("/api/search", response_model=SearchResponse)

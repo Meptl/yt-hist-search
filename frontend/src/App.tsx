@@ -48,11 +48,27 @@ export function App() {
 
   useEffect(() => {
     let isActive = true;
+    const mountTime = performance.now();
+    console.info(
+      `[timing] App mounted at ${new Date().toISOString()} (perf=${mountTime.toFixed(2)}ms)`
+    );
 
     async function checkIndexStatus() {
+      const requestStarted = performance.now();
+      console.info(
+        `[timing] /api/index-status fetch start at ${new Date().toISOString()} (+${(
+          requestStarted - mountTime
+        ).toFixed(2)}ms since App mount)`
+      );
       try {
         const response = await fetch('/api/index-status');
         const payload = (await response.json()) as IndexStatusResponse | { detail: string };
+        const responseTime = performance.now();
+        console.info(
+          `[timing] /api/index-status fetch complete status=${response.status} duration=${(
+            responseTime - requestStarted
+          ).toFixed(2)}ms`
+        );
 
         if (!response.ok) {
           const detail = 'detail' in payload ? payload.detail : 'Failed to check index status';
@@ -72,6 +88,11 @@ export function App() {
       } finally {
         if (isActive) {
           setCheckingIndex(false);
+          console.info(
+            `[timing] checkingIndex=false at ${new Date().toISOString()} (+${(
+              performance.now() - mountTime
+            ).toFixed(2)}ms since App mount)`
+          );
         }
       }
     }
