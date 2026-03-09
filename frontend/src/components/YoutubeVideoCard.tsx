@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 
 type SearchResponseItem = {
+  score: number | null;
   title?: string | null;
   channel_name?: string | null;
   video_id?: string | null;
@@ -26,6 +27,7 @@ export function YoutubeVideoCard({
 }: YoutubeVideoCardProps): ReactNode {
   const title = item.title?.trim() || fallbackTitle;
   const channelName = item.channel_name?.trim() || fallbackChannel;
+  const scoreLabel = item.score === null ? 'n/a' : item.score.toFixed(3);
   const thumb = thumbnailUrl ? (
     <img
       src={thumbnailUrl}
@@ -62,6 +64,9 @@ export function YoutubeVideoCard({
           <p className="video-title">{title}</p>
         )}
         <p className="video-channel">{channelName}</p>
+        <p className="video-score" aria-label={`Similarity score ${scoreLabel}`}>
+          {scoreLabel}
+        </p>
       </div>
     </li>
   );
