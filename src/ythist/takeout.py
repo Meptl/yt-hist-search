@@ -110,7 +110,6 @@ def to_llama_documents(entries: list[WatchEntry]) -> list[Document]:
                 f"Channel: {entry.channel_name}",
                 f"Watched At: {entry.watched_at_raw}",
                 f"Video URL: {entry.video_url}",
-                "Source: Google Takeout YouTube watch history",
             ]
         )
         docs.append(
@@ -125,7 +124,6 @@ def to_llama_documents(entries: list[WatchEntry]) -> list[Document]:
                     "channel_url": entry.channel_url,
                     "watched_at_raw": entry.watched_at_raw,
                     "watched_at_iso": entry.watched_at_iso,
-                    "source": "google_takeout_watch_history_html",
                 },
             )
         )
