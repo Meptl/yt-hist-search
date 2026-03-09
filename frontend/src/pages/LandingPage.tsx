@@ -24,6 +24,7 @@ type LandingPageProps = {
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
   onImportTakeoutFile: (file: File) => Promise<boolean>;
+  onValidateTakeoutFile: (file: File) => Promise<number | null>;
 };
 
 export function LandingPage({
@@ -38,11 +39,15 @@ export function LandingPage({
   importError,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
-  onImportTakeoutFile
+  onImportTakeoutFile,
+  onValidateTakeoutFile
 }: LandingPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const validationRequestIdRef = useRef(0);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedTakeoutFile, setSelectedTakeoutFile] = useState<File | null>(null);
+  const [detectedEntries, setDetectedEntries] = useState<number | null>(null);
+  const [validatingFile, setValidatingFile] = useState(false);
 
   function handleDropZoneClick() {
     if (importing) {
@@ -51,20 +56,34 @@ export function LandingPage({
     fileInputRef.current?.click();
   }
 
-  function handleSelectedFile(file: File | null) {
+  async function handleSelectedFile(file: File | null) {
     if (!file || importing) {
       return;
     }
+
+    const requestId = validationRequestIdRef.current + 1;
+    validationRequestIdRef.current = requestId;
+
     setSelectedTakeoutFile(file);
+    setDetectedEntries(null);
+    setValidatingFile(true);
+
+    const parsedEntries = await onValidateTakeoutFile(file);
+    if (validationRequestIdRef.current !== requestId) {
+      return;
+    }
+    setDetectedEntries(parsedEntries);
+    setValidatingFile(false);
   }
 
   async function triggerImport() {
-    if (!selectedTakeoutFile || importing) {
+    if (!selectedTakeoutFile || importing || !detectedEntries || detectedEntries <= 0) {
       return;
     }
     const importSucceeded = await onImportTakeoutFile(selectedTakeoutFile);
     if (importSucceeded) {
       setSelectedTakeoutFile(null);
+      setDetectedEntries(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -87,8 +106,19 @@ export function LandingPage({
     event.preventDefault();
     setIsDraggingFile(false);
     const file = event.dataTransfer.files.item(0);
-    handleSelectedFile(file);
+    void handleSelectedFile(file);
   }
+
+  const canImport =
+    !!selectedTakeoutFile && !validatingFile && detectedEntries !== null && detectedEntries > 0;
+
+  const detectionMessage = validatingFile
+    ? 'Validating selected file...'
+    : detectedEntries === null
+      ? 'Select a file to detect watch history entries.'
+      : detectedEntries === 0
+        ? 'Detected 0 entries. Import is disabled.'
+        : `Detected ${detectedEntries} entr${detectedEntries === 1 ? 'y' : 'ies'}.`;
 
   return (
     <div className="page">
@@ -143,8 +173,9 @@ export function LandingPage({
             type="file"
             accept=".html,.htm,.json,text/html,application/json"
             className="sr-only"
-            onChange={(event) => handleSelectedFile(event.target.files?.item(0) ?? null)}
+            onChange={(event) => void handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
+          <p className="status-line takeout-detected-note">{detectionMessage}</p>
 
           <h2>Additional Settings</h2>
 
@@ -186,7 +217,7 @@ export function LandingPage({
             type="button"
             className="floating-import-button"
             onClick={() => void triggerImport()}
-            disabled={!selectedTakeoutFile || importing}
+            disabled={!canImport || importing}
           >
             {importing ? 'Importing...' : 'Import'}
           </button>

@@ -188,6 +188,10 @@ body {
   font-size: 0.9rem;
 }
 
+.takeout-detected-note {
+  margin-top: -0.25rem;
+}
+
 .warning-line {
   color: #9a3412;
 }

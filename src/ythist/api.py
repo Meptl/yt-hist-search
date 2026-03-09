@@ -70,6 +70,10 @@ class ImportTakeoutResponse(BaseModel):
     index_dir: str
 
 
+class ValidateTakeoutResponse(BaseModel):
+    parsed_entries: int
+
+
 class ImportErrorDetail(BaseModel):
     message: str
     stack_trace: str | None = None
@@ -412,6 +416,53 @@ async def import_takeout_api_endpoint(
             status_code=500,
             detail=ImportErrorDetail(
                 message=f"Import failed unexpectedly: {exc}",
+                stack_trace="".join(traceback.format_exception(exc)),
+            ).model_dump(),
+        ) from exc
+    finally:
+        try:
+            os.remove(temp_file_path)
+        except OSError:
+            pass
+
+
+@app.post("/api/validate-takeout", response_model=ValidateTakeoutResponse)
+async def validate_takeout_api_endpoint(
+    file: UploadFile = File(...),
+) -> ValidateTakeoutResponse:
+    file_name = Path(file.filename or "watch-history.html").name
+    file_suffix = Path(file_name).suffix.lower()
+    if file_suffix not in {".html", ".htm", ".json"}:
+        raise HTTPException(
+            status_code=400,
+            detail=ImportErrorDetail(
+                message="Expected a .html/.htm/.json takeout file",
+                stack_trace=None,
+            ).model_dump(),
+        )
+
+    with tempfile.NamedTemporaryFile(suffix=file_suffix or ".tmp", delete=False) as tmp:
+        temp_file_path = Path(tmp.name)
+        content = await file.read()
+        tmp.write(content)
+
+    try:
+        entries = parse_watch_history(temp_file_path)
+        return ValidateTakeoutResponse(parsed_entries=len(entries))
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=ImportErrorDetail(
+                message=str(exc),
+                stack_trace="".join(traceback.format_exception(exc)),
+            ).model_dump(),
+        ) from exc
+    except Exception as exc:
+        logger.exception("Unhandled validate-takeout error")
+        raise HTTPException(
+            status_code=500,
+            detail=ImportErrorDetail(
+                message=f"Validation failed unexpectedly: {exc}",
                 stack_trace="".join(traceback.format_exception(exc)),
             ).model_dump(),
         ) from exc

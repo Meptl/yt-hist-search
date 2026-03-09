@@ -28,6 +28,10 @@ type IndexStatusResponse = {
   index_dir: string;
 };
 
+type ValidateTakeoutResponse = {
+  parsed_entries: number;
+};
+
 type ViewMode = 'search' | 'settings';
 
 function parseImportError(
@@ -190,6 +194,43 @@ export function App() {
     }
   }
 
+  async function onValidateTakeoutFile(file: File): Promise<number | null> {
+    setImportError(null);
+    try {
+      const formData = new FormData();
+      formData.set('file', file);
+
+      const response = await fetch('/api/validate-takeout', {
+        method: 'POST',
+        body: formData
+      });
+
+      const payload = (await response.json()) as unknown;
+      if (!response.ok) {
+        setImportError(parseImportError(payload, response.status, 'File validation failed'));
+        return null;
+      }
+
+      return (payload as ValidateTakeoutResponse).parsed_entries;
+    } catch (err) {
+      console.error('Validate takeout failed', err);
+      if (err instanceof Error && err.message.trim().length > 0) {
+        setImportError({
+          message: err.message,
+          stackTrace: err.stack ?? null,
+          statusCode: null
+        });
+      } else {
+        setImportError({
+          message: 'That file does not look like a Google Takeout watch history file.',
+          stackTrace: null,
+          statusCode: null
+        });
+      }
+      return null;
+    }
+  }
+
   if (checkingIndex) {
     return (
       <div className="page">
@@ -222,6 +263,7 @@ export function App() {
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
         onImportTakeoutFile={onImportTakeoutFile}
+        onValidateTakeoutFile={onValidateTakeoutFile}
       />
     );
   }
