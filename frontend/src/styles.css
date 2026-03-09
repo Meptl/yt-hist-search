@@ -267,23 +267,28 @@ body {
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.9rem;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .result-card {
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  padding: 0.95rem;
-  background: #fffeff;
+  border-radius: 14px;
+  background: transparent;
 }
 
 .thumb-link {
   display: block;
-  margin-bottom: 0.85rem;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--edge) 88%, #000 12%);
-  background: #d7dccc;
+  border: 1px solid color-mix(in srgb, var(--edge) 84%, #000 16%);
+  background: #e0e4d6;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.thumb-link:hover,
+.thumb-link:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
 }
 
 .result-thumb {
@@ -293,30 +298,44 @@ body {
   object-fit: cover;
 }
 
-.card-head,
-.card-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
+.result-thumb-fallback {
+  background: linear-gradient(140deg, #e9ecdf, #d3d9c8);
 }
 
-.card-head span,
-.card-foot code {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.8rem;
-  color: var(--muted);
+.card-body {
+  margin-top: 0.62rem;
+  display: grid;
+  gap: 0.32rem;
 }
 
-.result-card p {
-  white-space: pre-wrap;
-  margin: 0.8rem 0;
-  line-height: 1.55;
+.video-title {
+  margin: 0;
+  color: #0f0f0f;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-wrap: balance;
 }
 
-.card-foot a {
-  color: #0b4f4b;
-  text-decoration-thickness: 2px;
+.video-title:hover,
+.video-title:focus-visible {
+  text-decoration: underline;
+}
+
+.video-channel {
+  margin: 0;
+  color: #606060;
+  font-size: 0.88rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .empty-state {
@@ -373,9 +392,7 @@ body {
     height: 40px;
   }
 
-  .card-head,
-  .card-foot {
-    flex-direction: column;
-    align-items: flex-start;
+  .results-list {
+    grid-template-columns: 1fr;
   }
 }

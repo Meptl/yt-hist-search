@@ -6,6 +6,8 @@ type SearchResponseItem = {
   score: number | null;
   file_path: string;
   text: string;
+  title?: string | null;
+  channel_name?: string | null;
   video_id?: string | null;
   video_url?: string | null;
 };
@@ -48,6 +50,12 @@ function decodeHtmlEntities(text: string): string {
   const textarea = window.document.createElement('textarea');
   textarea.innerHTML = text;
   return textarea.value;
+}
+
+function extractFieldValue(text: string, label: string): string | null {
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = text.match(new RegExp(`^${escapedLabel}:\\s*(.+)$`, 'im'));
+  return match?.[1]?.trim() || null;
 }
 
 export function SearchPage({
@@ -210,6 +218,9 @@ export function SearchPage({
                 const videoUrl = item.video_url ?? extractVideoUrl(item.text);
                 const thumbnailUrl = buildThumbnailUrl(item.video_id ?? null);
                 const decodedText = decodeHtmlEntities(item.text);
+                const fallbackTitle = extractFieldValue(decodedText, 'Title') ?? 'Untitled video';
+                const fallbackChannel =
+                  extractFieldValue(decodedText, 'Channel') ?? 'Unknown channel';
                 return (
                   <YoutubeVideoCard
                     key={`${item.file_path}-${index}`}
@@ -217,7 +228,8 @@ export function SearchPage({
                     index={index}
                     videoUrl={videoUrl}
                     thumbnailUrl={thumbnailUrl}
-                    decodedText={decodedText}
+                    fallbackTitle={fallbackTitle}
+                    fallbackChannel={fallbackChannel}
                   />
                 );
               })}

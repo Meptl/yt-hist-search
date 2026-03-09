@@ -1,9 +1,8 @@
 import { ReactNode } from 'react';
 
 type SearchResponseItem = {
-  score: number | null;
-  file_path: string;
-  text: string;
+  title?: string | null;
+  channel_name?: string | null;
   video_id?: string | null;
   video_url?: string | null;
 };
@@ -13,7 +12,8 @@ type YoutubeVideoCardProps = {
   index: number;
   videoUrl: string | null;
   thumbnailUrl: string | null;
-  decodedText: string;
+  fallbackTitle: string;
+  fallbackChannel: string;
 };
 
 export function YoutubeVideoCard({
@@ -21,39 +21,47 @@ export function YoutubeVideoCard({
   index,
   videoUrl,
   thumbnailUrl,
-  decodedText
+  fallbackTitle,
+  fallbackChannel
 }: YoutubeVideoCardProps): ReactNode {
+  const title = item.title?.trim() || fallbackTitle;
+  const channelName = item.channel_name?.trim() || fallbackChannel;
+  const thumb = thumbnailUrl ? (
+    <img
+      src={thumbnailUrl}
+      alt={`YouTube thumbnail for result ${index + 1}`}
+      className="result-thumb"
+      loading="lazy"
+      decoding="async"
+    />
+  ) : (
+    <div className="result-thumb result-thumb-fallback" aria-hidden="true" />
+  );
+
   return (
     <li className="result-card">
-      {thumbnailUrl ? (
+      {videoUrl ? (
         <a
-          href={videoUrl ?? undefined}
+          href={videoUrl}
           target="_blank"
           rel="noreferrer"
           className="thumb-link"
           aria-label={`Open video result ${index + 1}`}
         >
-          <img
-            src={thumbnailUrl}
-            alt={`YouTube thumbnail for result ${index + 1}`}
-            className="result-thumb"
-            loading="lazy"
-            decoding="async"
-          />
+          {thumb}
         </a>
-      ) : null}
-      <div className="card-head">
-        <strong>#{index + 1}</strong>
-        <span>score {typeof item.score === 'number' ? item.score.toFixed(4) : 'n/a'}</span>
-      </div>
-      <p>{decodedText}</p>
-      <div className="card-foot">
-        <code>{item.file_path}</code>
+      ) : (
+        <div className="thumb-link">{thumb}</div>
+      )}
+      <div className="card-body">
         {videoUrl ? (
-          <a href={videoUrl} target="_blank" rel="noreferrer">
-            Open video
+          <a href={videoUrl} target="_blank" rel="noreferrer" className="video-title">
+            {title}
           </a>
-        ) : null}
+        ) : (
+          <p className="video-title">{title}</p>
+        )}
+        <p className="video-channel">{channelName}</p>
       </div>
     </li>
   );

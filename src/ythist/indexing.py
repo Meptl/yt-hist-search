@@ -50,6 +50,8 @@ class SearchHit:
     text: str
     video_id: str | None
     video_url: str | None
+    title: str | None
+    channel_name: str | None
 
 
 @dataclass(frozen=True)
@@ -309,6 +311,10 @@ def search(
                 text=node.text,
                 video_id=str(metadata["video_id"]) if metadata.get("video_id") else None,
                 video_url=str(metadata["video_url"]) if metadata.get("video_url") else None,
+                title=str(metadata["title"]) if metadata.get("title") else None,
+                channel_name=(
+                    str(metadata["channel_name"]) if metadata.get("channel_name") else None
+                ),
             )
         )
     return hits
