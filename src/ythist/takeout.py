@@ -102,8 +102,9 @@ def parse_watch_history_html(html_path: Path) -> list[WatchEntry]:
 
 
 def to_llama_documents(entries: list[WatchEntry]) -> list[Document]:
+    deduped_entries = dedupe_entries_by_video_id(entries)
     docs: list[Document] = []
-    for entry in entries:
+    for entry in deduped_entries:
         text = "\n".join(
             [
                 f"Title: {entry.title}",
@@ -128,6 +129,17 @@ def to_llama_documents(entries: list[WatchEntry]) -> list[Document]:
             )
         )
     return docs
+
+
+def dedupe_entries_by_video_id(entries: list[WatchEntry]) -> list[WatchEntry]:
+    seen_video_ids: set[str] = set()
+    deduped: list[WatchEntry] = []
+    for entry in entries:
+        if entry.video_id in seen_video_ids:
+            continue
+        deduped.append(entry)
+        seen_video_ids.add(entry.video_id)
+    return deduped
 
 
 def write_csv(entries: list[WatchEntry], output_path: Path) -> None:
