@@ -34,6 +34,7 @@ export function LandingPage({
 }: LandingPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [selectedTakeoutFile, setSelectedTakeoutFile] = useState<File | null>(null);
 
   function handleDropZoneClick() {
     if (importing) {
@@ -42,11 +43,22 @@ export function LandingPage({
     fileInputRef.current?.click();
   }
 
-  async function handleSelectedFile(file: File | null) {
+  function handleSelectedFile(file: File | null) {
     if (!file || importing) {
       return;
     }
-    await onImportTakeoutFile(file);
+    setSelectedTakeoutFile(file);
+  }
+
+  async function triggerImport() {
+    if (!selectedTakeoutFile || importing) {
+      return;
+    }
+    await onImportTakeoutFile(selectedTakeoutFile);
+    setSelectedTakeoutFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }
 
   function handleDragOver(event: DragEvent<HTMLButtonElement>) {
@@ -61,11 +73,11 @@ export function LandingPage({
     setIsDraggingFile(false);
   }
 
-  async function handleDrop(event: DragEvent<HTMLButtonElement>) {
+  function handleDrop(event: DragEvent<HTMLButtonElement>) {
     event.preventDefault();
     setIsDraggingFile(false);
     const file = event.dataTransfer.files.item(0);
-    await handleSelectedFile(file);
+    handleSelectedFile(file);
   }
 
   return (
@@ -103,18 +115,21 @@ export function LandingPage({
             onClick={handleDropZoneClick}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            onDrop={(event) => void handleDrop(event)}
+            onDrop={handleDrop}
             disabled={importing}
           >
             <span>{importing ? 'Importing and indexing...' : 'Drop watch-history.html here'}</span>
             {!importing && <small>or click to choose a file</small>}
+            {selectedTakeoutFile && !importing ? (
+              <small className="selected-file-name">Selected: {selectedTakeoutFile.name}</small>
+            ) : null}
           </button>
           <input
             ref={fileInputRef}
             type="file"
             accept=".html,.htm,text/html"
             className="sr-only"
-            onChange={(event) => void handleSelectedFile(event.target.files?.item(0) ?? null)}
+            onChange={(event) => handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
 
           <h2>Additional Settings</h2>
@@ -139,6 +154,17 @@ export function LandingPage({
           />
         </section>
       </main>
+
+      {selectedTakeoutFile ? (
+        <button
+          type="button"
+          className="floating-import-button"
+          onClick={() => void triggerImport()}
+          disabled={importing}
+        >
+          {importing ? 'Importing...' : 'Import'}
+        </button>
+      ) : null}
     </div>
   );
 }
