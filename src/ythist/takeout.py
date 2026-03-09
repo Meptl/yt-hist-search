@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import html
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -60,6 +61,12 @@ def _extract_video_id(url: str) -> str:
 
 def _parse_datetime(raw_value: str) -> str | None:
     cleaned = _normalize_whitespace(raw_value)
+    if cleaned.endswith("Z"):
+        cleaned = f"{cleaned[:-1]}+00:00"
+    try:
+        return datetime.fromisoformat(cleaned).isoformat()
+    except ValueError:
+        pass
     for fmt in ("%b %d, %Y, %I:%M:%S %p %Z", "%b %d, %Y, %I:%M:%S %p"):
         try:
             return datetime.strptime(cleaned, fmt).isoformat()
@@ -69,8 +76,8 @@ def _parse_datetime(raw_value: str) -> str | None:
 
 
 def parse_watch_history_html(html_path: Path) -> list[WatchEntry]:
-    html = html_path.read_text(encoding="utf-8", errors="ignore")
-    chunks = ENTRY_RE.findall(html)
+    content = html_path.read_text(encoding="utf-8", errors="ignore")
+    chunks = ENTRY_RE.findall(content)
 
     results: list[WatchEntry] = []
     for chunk in chunks:
@@ -100,6 +107,74 @@ def parse_watch_history_html(html_path: Path) -> list[WatchEntry]:
             )
         )
     return results
+
+
+def parse_watch_history_json(json_path: Path) -> list[WatchEntry]:
+    content = json_path.read_text(encoding="utf-8", errors="ignore")
+    payload = json.loads(content)
+    if not isinstance(payload, list):
+        return []
+
+    results: list[WatchEntry] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+
+        video_url_value = item.get("titleUrl")
+        video_url = video_url_value.strip() if isinstance(video_url_value, str) else ""
+        video_id = _extract_video_id(video_url)
+        if not video_id:
+            continue
+
+        title_value = item.get("title")
+        title = title_value.strip() if isinstance(title_value, str) else ""
+        if title.startswith("Watched "):
+            title = title[len("Watched ") :].strip()
+        title = _decode_html_entities(title)
+
+        channel_name = ""
+        channel_url = ""
+        subtitles = item.get("subtitles")
+        if isinstance(subtitles, list) and subtitles:
+            first_subtitle = subtitles[0]
+            if isinstance(first_subtitle, dict):
+                name_value = first_subtitle.get("name")
+                url_value = first_subtitle.get("url")
+                channel_name = name_value.strip() if isinstance(name_value, str) else ""
+                channel_url = url_value.strip() if isinstance(url_value, str) else ""
+
+        watched_time_value = item.get("time")
+        watched_at_raw = (
+            _normalize_whitespace(watched_time_value)
+            if isinstance(watched_time_value, str)
+            else ""
+        )
+        watched_at_iso = _parse_datetime(watched_at_raw)
+
+        results.append(
+            WatchEntry(
+                video_id=video_id,
+                video_url=video_url,
+                title=title,
+                channel_name=channel_name,
+                channel_url=channel_url,
+                watched_at_raw=watched_at_raw,
+                watched_at_iso=watched_at_iso,
+            )
+        )
+    return results
+
+
+def parse_watch_history(takeout_path: Path) -> list[WatchEntry]:
+    suffix = takeout_path.suffix.lower()
+    if suffix in {".html", ".htm"}:
+        return parse_watch_history_html(takeout_path)
+    if suffix == ".json":
+        return parse_watch_history_json(takeout_path)
+    raise ValueError(
+        f"Unsupported takeout file extension: {takeout_path.suffix}. "
+        "Expected .html, .htm, or .json."
+    )
 
 
 def to_llama_documents(

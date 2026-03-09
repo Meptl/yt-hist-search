@@ -135,7 +135,7 @@ app.whenReady().then(async () => {
     const result = await dialog.showOpenDialog({
       title: 'Select Google Takeout watch-history.html',
       properties: ['openFile'],
-      filters: [{ name: 'HTML', extensions: ['html', 'htm'] }]
+      filters: [{ name: 'HTML', extensions: ['html', 'htm', 'json'] }]
     });
     if (result.canceled || result.filePaths.length === 0) {
       return null;

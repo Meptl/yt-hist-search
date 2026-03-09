@@ -13,7 +13,7 @@ from ythist.indexing import (
     search,
 )
 from ythist.takeout import (
-    parse_watch_history_html,
+    parse_watch_history,
     to_llama_documents,
     write_csv,
 )
@@ -32,9 +32,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     import_takeout_cmd = sub.add_parser(
         "import-takeout",
-        help="Parse Google Takeout watch-history.html and index entries",
+        help="Parse Google Takeout watch-history.html/json and index entries",
     )
-    import_takeout_cmd.add_argument("html_path", help="Path to watch-history.html")
+    import_takeout_cmd.add_argument(
+        "takeout_path",
+        help="Path to watch-history.html, watch-history.htm, or watch-history.json",
+    )
     import_takeout_cmd.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR))
     import_takeout_cmd.add_argument(
         "--csv-out", default="dev_assets/data/youtube_watch_history.csv"
@@ -95,15 +98,15 @@ def _cmd_search(args: argparse.Namespace) -> None:
 
 
 def _cmd_import_takeout(args: argparse.Namespace) -> None:
-    html_path = Path(args.html_path)
-    entries = parse_watch_history_html(html_path)
+    takeout_path = Path(args.takeout_path)
+    entries = parse_watch_history(takeout_path)
     if not entries:
-        raise ValueError(f"No watch entries found in {html_path}")
+        raise ValueError(f"No watch entries found in {takeout_path}")
 
     csv_out = Path(args.csv_out)
     write_csv(entries, csv_out)
 
-    print(f"Parsed {len(entries)} entries from {html_path}")
+    print(f"Parsed {len(entries)} entries from {takeout_path}")
     print(f"Wrote CSV: {csv_out}")
 
     if args.skip_index:

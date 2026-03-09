@@ -5,6 +5,7 @@ import tempfile
 import logging
 import shutil
 import time
+import json
 from pathlib import Path
 from threading import Thread
 
@@ -23,7 +24,7 @@ from ythist.indexing import (
     warmup,
 )
 from ythist.takeout import (
-    parse_watch_history_html,
+    parse_watch_history,
     to_llama_documents,
     write_csv,
 )
@@ -69,7 +70,8 @@ class ImportTakeoutResponse(BaseModel):
 
 
 class ImportTakeoutPathRequest(BaseModel):
-    html_path: str
+    takeout_path: str | None = None
+    html_path: str | None = None
     index_dir: str = str(DEFAULT_INDEX_DIR)
     data_dir: str = "dev_assets/data"
     skip_index: bool = False
@@ -115,22 +117,28 @@ def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
     )
 
 
-def _run_import_from_html_path(
-    html_path: Path,
+def _run_import_from_takeout_path(
+    takeout_path: Path,
     index_dir: Path,
     data_dir: Path,
     skip_index: bool,
     youtube_data_api_key: str | None,
 ) -> ImportTakeoutResponse:
-    if not html_path.exists() or not html_path.is_file():
-        raise HTTPException(status_code=400, detail=f"File not found: {html_path}")
-    if html_path.suffix.lower() not in {".html", ".htm"}:
-        raise HTTPException(status_code=400, detail="Expected a .html/.htm takeout file")
+    if not takeout_path.exists() or not takeout_path.is_file():
+        raise HTTPException(status_code=400, detail=f"File not found: {takeout_path}")
+    if takeout_path.suffix.lower() not in {".html", ".htm", ".json"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Expected a .html/.htm/.json takeout file",
+        )
 
     data_dir.mkdir(parents=True, exist_ok=True)
     index_dir.mkdir(parents=True, exist_ok=True)
 
-    entries = parse_watch_history_html(html_path)
+    try:
+        entries = parse_watch_history(takeout_path)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not entries:
         raise HTTPException(
             status_code=400,
@@ -348,20 +356,21 @@ async def import_takeout_api_endpoint(
     skip_index: bool = Form(False),
 ) -> ImportTakeoutResponse:
     file_name = Path(file.filename or "watch-history.html").name
-    if not file_name.lower().endswith((".html", ".htm")):
-        raise HTTPException(status_code=400, detail="Expected a .html/.htm takeout file")
+    file_suffix = Path(file_name).suffix.lower()
+    if file_suffix not in {".html", ".htm", ".json"}:
+        raise HTTPException(status_code=400, detail="Expected a .html/.htm/.json takeout file")
 
     data_path = Path(data_dir)
     index_path = Path(index_dir)
 
-    with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=file_suffix or ".tmp", delete=False) as tmp:
         temp_file_path = Path(tmp.name)
         content = await file.read()
         tmp.write(content)
 
     try:
-        return _run_import_from_html_path(
-            html_path=temp_file_path,
+        return _run_import_from_takeout_path(
+            takeout_path=temp_file_path,
             index_dir=index_path,
             data_dir=data_path,
             skip_index=skip_index,
@@ -378,9 +387,15 @@ async def import_takeout_api_endpoint(
 def import_takeout_path_api_endpoint(
     payload: ImportTakeoutPathRequest,
 ) -> ImportTakeoutResponse:
+    takeout_path = payload.takeout_path or payload.html_path
+    if not takeout_path:
+        raise HTTPException(
+            status_code=400,
+            detail="Expected `takeout_path` (or legacy `html_path`) in request body.",
+        )
     current_settings = load_settings()
-    return _run_import_from_html_path(
-        html_path=Path(payload.html_path),
+    return _run_import_from_takeout_path(
+        takeout_path=Path(takeout_path),
         index_dir=Path(payload.index_dir),
         data_dir=Path(payload.data_dir),
         skip_index=payload.skip_index,

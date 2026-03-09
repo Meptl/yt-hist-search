@@ -118,7 +118,11 @@ export function LandingPage({
             onDrop={handleDrop}
             disabled={importing}
           >
-            <span>{importing ? 'Importing and indexing...' : 'Drop watch-history.html here'}</span>
+            <span>
+              {importing
+                ? 'Importing and indexing...'
+                : 'Drop watch-history.html here'}
+            </span>
             {!importing && <small>or click to choose a file</small>}
             {selectedTakeoutFile && !importing ? (
               <small className="selected-file-name">Selected: {selectedTakeoutFile.name}</small>
@@ -127,7 +131,7 @@ export function LandingPage({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".html,.htm,text/html"
+            accept=".html,.htm,.json,text/html,application/json"
             className="sr-only"
             onChange={(event) => handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
