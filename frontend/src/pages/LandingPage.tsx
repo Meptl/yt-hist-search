@@ -81,19 +81,19 @@ export function LandingPage({
                 <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">
                   Google Takeout
                 </a>{' '}
-                and select only <strong>YouTube and YouTube Music</strong>.
               </li>
               <li>
-                In the YouTube options, ensure <strong>history</strong> is included and choose{' '}
-                <strong>HTML format</strong>.
+                For products, click <strong>Deselect all</strong> and select <strong>YouTube and YouTube Music</strong>.
+              </li>
+              <li>
+                In the YouTube options, click <strong>Deselect all</strong> and select <strong>history</strong>.
               </li>
               <li>
                 Create the export and download the archive when Google notifies you that it is
                 ready.
               </li>
               <li>
-                Extract the archive and find <code>watch-history.html</code> (usually under
-                <code>Takeout/YouTube and YouTube Music/history/</code>).
+                Extract the archive and find <code>watch-history.html</code> usually under <code>Takeout/YouTube and YouTube Music/history/</code>.
               </li>
             </ol>
           </section>
