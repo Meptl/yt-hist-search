@@ -9,7 +9,7 @@ from typing import Literal
 LLMRouter = Literal["codex", "claude", "gemini", "opencode"]
 
 _STATIC_FILTERS_SUPPORTED: tuple[str, ...] = (
-    "time (supported formats: `YYYY`, `>=YYYY-MM-DD`, `<=YYYY-MM-DD`, or `YYYY-MM-DD..YYYY-MM-DD`)",
+    "time (supported formats: `>=YYYY-MM-DD`, `<=YYYY-MM-DD`, or `YYYY-MM-DD..YYYY-MM-DD`)",
 )
 
 _DEFAULT_COMMAND_CANDIDATES: dict[LLMRouter, list[list[str]]] = {
@@ -48,9 +48,9 @@ def _build_router_prompt(user_query: str) -> str:
         '  "errors": ["OPTIONAL_ERROR"]\n'
         "}\n\n"
         "Requirements:\n"
-        "- Rewrite `new_prompt` as a concise keyword-focused retrieval query (remove filler words).\n"
+
+        "- Rewrite `new_prompt` as an optimal prompt for use in a RAG system.\n"
         "- Remove discovered static filters from new_prompt.\n"
-        "- Do not include markdown fences.\n\n"
         f"User request:\n{user_query}"
     )
 
