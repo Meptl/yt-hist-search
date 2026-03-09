@@ -5,13 +5,6 @@ import { LandingPage } from './pages/LandingPage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 
-type ImportResponse = {
-  parsed_entries: number;
-  indexed_entries: number;
-  csv_out: string;
-  index_dir: string;
-};
-
 type ImportApiErrorDetail = {
   message?: string;
   stack_trace?: string | null;
@@ -168,7 +161,6 @@ export function App() {
         return false;
       }
 
-      const details = payload as ImportResponse;
       setLastImportedPath(file.name);
       setIndexReady(true);
       setViewMode('search');

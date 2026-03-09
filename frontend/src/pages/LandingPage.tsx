@@ -47,7 +47,6 @@ export function LandingPage({
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedTakeoutFile, setSelectedTakeoutFile] = useState<File | null>(null);
   const [detectedEntries, setDetectedEntries] = useState<number | null>(null);
-  const [validatingFile, setValidatingFile] = useState(false);
 
   function handleDropZoneClick() {
     if (importing) {
@@ -66,14 +65,12 @@ export function LandingPage({
 
     setSelectedTakeoutFile(file);
     setDetectedEntries(null);
-    setValidatingFile(true);
 
     const parsedEntries = await onValidateTakeoutFile(file);
     if (validationRequestIdRef.current !== requestId) {
       return;
     }
     setDetectedEntries(parsedEntries);
-    setValidatingFile(false);
   }
 
   async function triggerImport() {
@@ -109,16 +106,9 @@ export function LandingPage({
     void handleSelectedFile(file);
   }
 
-  const canImport =
-    !!selectedTakeoutFile && !validatingFile && detectedEntries !== null && detectedEntries > 0;
+  const canImport = !!selectedTakeoutFile && detectedEntries !== null && detectedEntries > 0;
 
-  const detectionMessage = validatingFile
-    ? 'Validating selected file...'
-    : detectedEntries === null
-      ? 'Select a file to detect watch history entries.'
-      : detectedEntries === 0
-        ? 'Detected 0 entries. Import is disabled.'
-        : `Detected ${detectedEntries} entr${detectedEntries === 1 ? 'y' : 'ies'}.`;
+  const detectionMessage = `Detected ${detectedEntries} entr${detectedEntries === 1 ? 'y' : 'ies'}.`;
 
   return (
     <div className="page">
