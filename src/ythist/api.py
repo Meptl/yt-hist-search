@@ -621,7 +621,7 @@ def validate_youtube_api_key_api_endpoint(
     if not isinstance(key_candidate, str) or not key_candidate.strip():
         return ValidateYouTubeApiKeyResponse(
             valid=True,
-            message="API key cleared. Using the default shared key.",
+            message="",
         )
 
     try:

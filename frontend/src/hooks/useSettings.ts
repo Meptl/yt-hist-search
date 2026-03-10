@@ -134,7 +134,7 @@ export function useSettings() {
         setYoutubeDataApiKeyStatusMessage('Checking YouTube Data API key...');
       } else {
         setYoutubeDataApiKeyStatusTone('muted');
-        setYoutubeDataApiKeyStatusMessage('API key cleared. Using the default shared key.');
+        setYoutubeDataApiKeyStatusMessage(null);
       }
 
       void (async () => {
