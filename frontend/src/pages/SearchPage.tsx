@@ -224,13 +224,13 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
               </div>
             ) : null
           ) : null}
-        </section>
 
-        {loading ? (
-          <div className="bottom-loading-indicator" aria-live="polite" aria-label="Loading">
-            <span className="loading-spinner" aria-hidden="true" />
-          </div>
-        ) : null}
+          {loading ? (
+            <div className="bottom-loading-indicator" aria-live="polite" aria-label="Loading">
+              <span className="loading-spinner" aria-hidden="true" />
+            </div>
+          ) : null}
+        </section>
       </main>
     </div>
   );
