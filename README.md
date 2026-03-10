@@ -1,131 +1,64 @@
-# yt-hist (LlamaIndex bootstrap)
+# yt-hist
 
-This repo is initialized as a local LlamaIndex app with:
-- CLI for `init`, `import-takeout`, `search`, `serve`
-- FastAPI server (`/health`, `/search`, `/api/search`)
-- React + Vite frontend in `frontend/` (served by FastAPI after build)
-- Electron desktop shell that auto-starts the Python backend
+Local desktop app for importing YouTube history from Google Takeout, indexing it, and running semantic retrieval through a local API + React UI.
+
+This repository uses:
+- FastAPI backend (`src/ythist/api.py`)
+- React + Vite frontend (`frontend/`)
+- Electron desktop shell (`electron/main.cjs`)
 - Local persistent index under `dev_assets/index`
 
-The implementation follows LlamaIndex usage from:
-- https://github.com/run-llama/llama_index
-- https://docs.llamaindex.ai
-
-## 1. Install
+## Install
 
 ```bash
 uv venv
 source .venv/bin/activate
 uv pip install -e .
-```
-
-## 2. Initialize local folders
-
-```bash
-ythist init
-```
-
-## 3. Import Google Takeout watch history
-
-```bash
-ythist import-takeout watch-history.html
-```
-
-This command:
-- Parses every watched video entry from Takeout HTML
-- Writes CSV to `dev_assets/data/youtube_watch_history.csv`
-- Builds the vector index in `dev_assets/index`
-
-If you only want CSV export without indexing:
-
-```bash
-ythist import-takeout watch-history.html --skip-index
-```
-
-## 4. Semantic search
-
-```bash
-ythist search "videos about RAG and vectors" --score-threshold 0.70
-```
-
-## 5. Run local API server
-
-```bash
-ythist serve --host 127.0.0.1 --port 8000
-```
-
-Then use:
-
-```bash
-curl http://127.0.0.1:8000/health
-curl "http://127.0.0.1:8000/search?q=python%20videos&score_threshold=0.70"
-curl "http://127.0.0.1:8000/api/search?q=python%20videos&score_threshold=0.70"
-```
-
-## 6. Frontend setup
-
-Install frontend dependencies:
-
-```bash
-cd frontend
-pnpm install
-```
-
-Run frontend dev server (proxies API calls to `127.0.0.1:8000`):
-
-```bash
-pnpm dev
-```
-
-Build frontend for local FastAPI serving:
-
-```bash
-pnpm build
-```
-
-After build, run `ythist serve` and open:
-
-```text
-http://127.0.0.1:8000
-```
-
-## 7. Electron desktop app
-
-Install Node dependencies:
-
-```bash
 pnpm install
 pnpm --dir frontend install
 ```
 
-Run desktop app in development mode:
+## Run desktop app (recommended)
+
+Development mode:
 
 ```bash
 pnpm dev
 ```
 
-This starts:
-- Vite dev server (`http://127.0.0.1:5173`)
-- Electron shell
-- Python backend automatically (via `.venv/bin/ythist serve` or `uv run ythist serve`)
-
-Run desktop app against built frontend:
+Production-style local run:
 
 ```bash
 pnpm build:frontend
 pnpm start
 ```
 
-## 8. Backend API for full workflow
+## Run backend API directly
 
-The FastAPI service now supports frontend-driven import/index:
-- `POST /api/init` creates local app directories
-- `POST /api/import-takeout` accepts uploaded `watch-history.html`, exports CSV, and builds index
-- `GET /api/search` runs semantic retrieval
+```bash
+PYTHONPATH=src uv run python -m uvicorn ythist.api:app --host 127.0.0.1 --port 8000
+```
+
+Key endpoints:
+- `GET /health`
+- `GET /api/index-status`
+- `POST /api/import-takeout-jobs`
+- `GET /api/import-takeout-jobs/{job_id}`
+- `GET /api/search`
+- `GET /api/settings`
+- `PUT /api/settings`
+
+## Frontend-only dev (optional)
+
+```bash
+cd frontend
+pnpm dev
+```
+
+This expects the backend to already be running at `127.0.0.1:8000`.
 
 ## Notes
 
-- Embeddings use `FastEmbed` with model `BAAI/bge-small-en-v1.5`.
-- The first run downloads embedding model files (one-time internet access required).
-- On backend startup, embedding warmup begins automatically so first query latency is reduced.
-- Re-running `import-takeout` rebuilds the persisted index in `dev_assets/index`.
+- Embeddings use FastEmbed model `BAAI/bge-small-en-v1.5`.
+- First run may download embedding model files.
+- Importing Takeout writes CSV to `dev_assets/data/youtube_watch_history.csv` and updates `dev_assets/index`.

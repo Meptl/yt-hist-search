@@ -19,9 +19,6 @@ openai = [
   "llama-index-llms-openai>=0.2.0",
 ]
 
-[project.scripts]
-ythist = "ythist.cli:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

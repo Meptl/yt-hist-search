@@ -4,9 +4,9 @@ This repository looks to create a local application that imports YouTube history
 - browser-based UI backed by the local service
 
 ## 2. Runtime Model
-Single local process with two interfaces:
-- CLI commands for import/index/query/admin
+Single local process with local HTTP interfaces:
 - Local HTTP server for web UI and API
+- Electron desktop shell as the primary user entrypoint
 Recommended stack:
 - Backend: Python + FastAPI
 - Storage: SQLite

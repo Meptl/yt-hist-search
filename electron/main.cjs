@@ -23,26 +23,35 @@ function frontendUrl() {
 
 function resolveBackendCommand() {
   const projectRoot = path.resolve(__dirname, '..');
-  const unixYthist = path.join(projectRoot, '.venv', 'bin', 'ythist');
-  const winYthist = path.join(projectRoot, '.venv', 'Scripts', 'ythist.exe');
+  const unixPython = path.join(projectRoot, '.venv', 'bin', 'python');
+  const winPython = path.join(projectRoot, '.venv', 'Scripts', 'python.exe');
+  const uvicornArgs = [
+    '-m',
+    'uvicorn',
+    'ythist.api:app',
+    '--host',
+    BACKEND_HOST,
+    '--port',
+    String(BACKEND_PORT)
+  ];
 
-  if (fs.existsSync(unixYthist)) {
+  if (fs.existsSync(unixPython)) {
     return {
-      command: unixYthist,
-      args: ['serve', '--host', BACKEND_HOST, '--port', String(BACKEND_PORT)]
+      command: unixPython,
+      args: uvicornArgs
     };
   }
 
-  if (fs.existsSync(winYthist)) {
+  if (fs.existsSync(winPython)) {
     return {
-      command: winYthist,
-      args: ['serve', '--host', BACKEND_HOST, '--port', String(BACKEND_PORT)]
+      command: winPython,
+      args: uvicornArgs
     };
   }
 
   return {
     command: 'uv',
-    args: ['run', 'ythist', 'serve', '--host', BACKEND_HOST, '--port', String(BACKEND_PORT)]
+    args: ['run', ...uvicornArgs]
   };
 }
 
@@ -83,6 +92,9 @@ function startBackend() {
     stdio: 'pipe',
     env: {
       ...process.env,
+      PYTHONPATH: process.env.PYTHONPATH
+        ? `${path.join(__dirname, '..', 'src')}${path.delimiter}${process.env.PYTHONPATH}`
+        : path.join(__dirname, '..', 'src'),
       PYTHONUNBUFFERED: '1'
     }
   });
