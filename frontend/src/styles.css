@@ -220,9 +220,9 @@ body {
   gap: 0.75rem;
 }
 
-.query-panel label {
-  font-size: 0.9rem;
-  font-weight: 500;
+.query-input-wrap {
+  position: relative;
+  display: grid;
 }
 
 .query-panel textarea {
@@ -230,10 +230,52 @@ body {
   border: 1px solid var(--edge);
   border-radius: 12px;
   min-height: 110px;
-  padding: 0.85rem;
+  padding: 0.85rem 3.75rem 0.85rem 0.85rem;
   font: inherit;
   color: var(--ink);
   background: #ffffff;
+}
+
+.query-submit-button {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f7fff8;
+  background: linear-gradient(130deg, var(--accent), #115e59);
+  cursor: pointer;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.query-submit-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.query-submit-button:hover:not(:disabled),
+.query-submit-button:focus-visible {
+  transform: translateY(-1px);
+}
+
+.query-submit-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, #ffffff 35%);
+  outline-offset: 2px;
+}
+
+.query-submit-button:disabled {
+  background: #96a195;
+  color: #eef2ed;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .query-panel select,

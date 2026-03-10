@@ -1,5 +1,5 @@
 import { FormEvent, KeyboardEvent, useState } from 'react';
-import { Cog, Plus } from 'lucide-react';
+import { Cog, Plus, Search } from 'lucide-react';
 import { YoutubeVideoCard } from '../components/YoutubeVideoCard';
 
 type SearchResponseItem = {
@@ -162,19 +162,23 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
         </header>
 
         <form className="query-panel" onSubmit={onSubmit}>
-          <label htmlFor="query">Search query</label>
-          <textarea
-            id="query"
-            rows={3}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={onQueryKeyDown}
-            placeholder="videos about RAG and embeddings"
-          />
-
-          <div className="controls">
-            <button type="submit" disabled={loading}>
-              Search History
+          <div className="query-input-wrap">
+            <textarea
+              id="query"
+              rows={3}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={onQueryKeyDown}
+              placeholder="videos about RAG and embeddings"
+            />
+            <button
+              type="submit"
+              className="query-submit-button"
+              disabled={loading || query.trim().length === 0}
+              aria-label="Search history"
+              title="Search history"
+            >
+              <Search aria-hidden="true" focusable="false" />
             </button>
           </div>
         </form>
