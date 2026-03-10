@@ -3,7 +3,7 @@ import { useRef, useState, type DragEvent } from 'react';
 import { LlmBackendField } from '../components/LlmBackendField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
-import { type LLMBackendSelection } from '../hooks/useSettings';
+import { type LLMBackendSelection, type YouTubeApiKeyStatusTone } from '../hooks/useSettings';
 
 type ImportErrorDetails = {
   message: string;
@@ -20,6 +20,8 @@ type LandingPageProps = {
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
   youtubeDataApiKey: string;
+  youtubeDataApiKeyStatusMessage: string | null;
+  youtubeDataApiKeyStatusTone: YouTubeApiKeyStatusTone;
   importError: ImportErrorDetails | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
@@ -36,6 +38,8 @@ export function LandingPage({
   settingsMessage,
   llmRouterCliWarning,
   youtubeDataApiKey,
+  youtubeDataApiKeyStatusMessage,
+  youtubeDataApiKeyStatusTone,
   importError,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
@@ -194,6 +198,8 @@ export function LandingPage({
             value={youtubeDataApiKey}
             loading={settingsLoading}
             saving={settingsSaving}
+            statusMessage={youtubeDataApiKeyStatusMessage}
+            statusTone={youtubeDataApiKeyStatusTone}
             onChange={onSetYoutubeDataApiKey}
           />
         </section>

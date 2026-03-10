@@ -200,6 +200,14 @@ body {
   color: #9a3412;
 }
 
+.success-line {
+  color: #166534;
+}
+
+.error-line {
+  color: #b91c1c;
+}
+
 .import-error {
   margin: 0;
   padding: 0.7rem 0.85rem;

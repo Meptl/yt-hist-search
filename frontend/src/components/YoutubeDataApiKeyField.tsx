@@ -5,6 +5,8 @@ type YoutubeDataApiKeyFieldProps = {
   value: string;
   loading: boolean;
   saving: boolean;
+  statusMessage: string | null;
+  statusTone: 'muted' | 'success' | 'error';
   onChange: (next: string) => void;
   compact?: boolean;
 };
@@ -13,6 +15,9 @@ export function YoutubeDataApiKeyField({
   id,
   value,
   loading,
+  saving,
+  statusMessage,
+  statusTone,
   onChange,
   compact = false
 }: YoutubeDataApiKeyFieldProps) {
@@ -20,8 +25,8 @@ export function YoutubeDataApiKeyField({
   const [draftValue, setDraftValue] = useState(value);
   const draftValueRef = useRef(value);
   const lastCommittedRef = useRef(value);
-  const isDisabled = loading;
-  const toggleDisabled = loading;
+  const isDisabled = loading || saving;
+  const toggleDisabled = loading || saving;
   const inputType = isVisible ? 'text' : 'password';
 
   useEffect(() => {
@@ -93,6 +98,19 @@ export function YoutubeDataApiKeyField({
           )}
         </button>
       </div>
+      {statusMessage ? (
+        <p
+          className={`status-line${
+            statusTone === 'error'
+              ? ' error-line'
+              : statusTone === 'success'
+                ? ' success-line'
+                : ''
+          }`}
+        >
+          {statusMessage}
+        </p>
+      ) : null}
     </div>
   );
 }

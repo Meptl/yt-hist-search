@@ -11,6 +11,7 @@ YOUTUBE_VIDEOS_PARTS = ("snippet", "topicDetails", "statistics")
 YOUTUBE_CHANNELS_PARTS = ("snippet",)
 _MAX_VIDEO_IDS_PER_REQUEST = 50
 _MAX_CHANNEL_IDS_PER_REQUEST = 50
+_KEY_VALIDATION_VIDEO_ID = "dQw4w9WgXcQ"
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,40 @@ def _build_youtube_client(api_key: str):
         developerKey=api_key,
         cache_discovery=False,
     )
+
+
+def _http_error_message(exc: HttpError) -> str:
+    content = getattr(exc, "content", b"")
+    if isinstance(content, bytes) and content:
+        try:
+            payload = json.loads(content.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return str(exc)
+        error_payload = payload.get("error")
+        if isinstance(error_payload, dict):
+            message = error_payload.get("message")
+            if isinstance(message, str) and message.strip():
+                return message.strip()
+    return str(exc)
+
+
+def validate_youtube_api_key(api_key: str) -> None:
+    normalized_api_key = api_key.strip()
+    if not normalized_api_key:
+        raise RuntimeError("YouTube Data API key is empty.")
+
+    youtube_client = _build_youtube_client(normalized_api_key)
+    request = youtube_client.videos().list(
+        id=_KEY_VALIDATION_VIDEO_ID,
+        part="id",
+    )
+    try:
+        request.execute(num_retries=0)
+    except HttpError as exc:
+        message = _http_error_message(exc)
+        raise RuntimeError(f"YouTube Data API key validation failed: {message}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"YouTube Data API returned invalid JSON: {exc}") from exc
 
 
 def _fetch_videos_payload(youtube_client, video_ids: list[str]) -> dict:

@@ -108,6 +108,8 @@ export function App() {
     settingsMessage,
     llmRouterCliWarning,
     youtubeDataApiKey,
+    youtubeDataApiKeyStatusMessage,
+    youtubeDataApiKeyStatusTone,
     scoreThreshold,
     setLlmBackend,
     setYoutubeDataApiKey,
@@ -391,6 +393,8 @@ export function App() {
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
         youtubeDataApiKey={youtubeDataApiKey}
+        youtubeDataApiKeyStatusMessage={youtubeDataApiKeyStatusMessage}
+        youtubeDataApiKeyStatusTone={youtubeDataApiKeyStatusTone}
         importError={importError}
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
@@ -410,6 +414,8 @@ export function App() {
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
         youtubeDataApiKey={youtubeDataApiKey}
+        youtubeDataApiKeyStatusMessage={youtubeDataApiKeyStatusMessage}
+        youtubeDataApiKeyStatusTone={youtubeDataApiKeyStatusTone}
         scoreThreshold={scoreThreshold}
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}

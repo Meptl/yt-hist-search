@@ -4,7 +4,7 @@ import { LlmBackendField } from '../components/LlmBackendField';
 import { ScoreThresholdField } from '../components/ScoreThresholdField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
-import { type LLMBackendSelection } from '../hooks/useSettings';
+import { type LLMBackendSelection, type YouTubeApiKeyStatusTone } from '../hooks/useSettings';
 
 type SettingsPageProps = {
   llmBackend: LLMBackendSelection;
@@ -14,6 +14,8 @@ type SettingsPageProps = {
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
   youtubeDataApiKey: string;
+  youtubeDataApiKeyStatusMessage: string | null;
+  youtubeDataApiKeyStatusTone: YouTubeApiKeyStatusTone;
   scoreThreshold: number;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
@@ -29,6 +31,8 @@ export function SettingsPage({
   settingsMessage,
   llmRouterCliWarning,
   youtubeDataApiKey,
+  youtubeDataApiKeyStatusMessage,
+  youtubeDataApiKeyStatusTone,
   scoreThreshold,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
@@ -84,6 +88,8 @@ export function SettingsPage({
             value={youtubeDataApiKey}
             loading={settingsLoading}
             saving={settingsSaving}
+            statusMessage={youtubeDataApiKeyStatusMessage}
+            statusTone={youtubeDataApiKeyStatusTone}
             onChange={onSetYoutubeDataApiKey}
             compact
           />

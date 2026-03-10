@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { fetchSettings, type LLMBackend, type SettingsResponse, updateSettings } from '../api/settings';
+import {
+  fetchSettings,
+  type LLMBackend,
+  type SettingsResponse,
+  updateSettings,
+  validateYouTubeDataApiKey
+} from '../api/settings';
 
 export type LLMBackendSelection = LLMBackend | 'none';
+export type YouTubeApiKeyStatusTone = 'muted' | 'success' | 'error';
 
 export function useSettings() {
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -11,6 +18,8 @@ export function useSettings() {
   const [llmRouterCliWarning, setLlmRouterCliWarning] = useState<string | null>(null);
   const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
   const [youtubeDataApiKey, setYoutubeDataApiKeyState] = useState('');
+  const [youtubeDataApiKeyStatusMessage, setYoutubeDataApiKeyStatusMessage] = useState<string | null>(null);
+  const [youtubeDataApiKeyStatusTone, setYoutubeDataApiKeyStatusTone] = useState<YouTubeApiKeyStatusTone>('muted');
   const [scoreThreshold, setScoreThresholdState] = useState(0.7);
   const saveRequestIdRef = useRef(0);
   const [llmBackendOptions, setLlmBackendOptions] = useState<LLMBackend[]>([
@@ -114,11 +123,54 @@ export function useSettings() {
   const setYoutubeDataApiKey = useCallback(
     (next: string) => {
       setYoutubeDataApiKeyState(next);
-      void persistSettings({
-        youtube_data_api_key: next.trim() || null
-      });
+      const requestId = saveRequestIdRef.current + 1;
+      saveRequestIdRef.current = requestId;
+      setSettingsSaving(true);
+      setSettingsMessage(null);
+
+      const normalized = next.trim() || null;
+      if (normalized) {
+        setYoutubeDataApiKeyStatusTone('muted');
+        setYoutubeDataApiKeyStatusMessage('Checking YouTube Data API key...');
+      } else {
+        setYoutubeDataApiKeyStatusTone('muted');
+        setYoutubeDataApiKeyStatusMessage('API key cleared. Using the default shared key.');
+      }
+
+      void (async () => {
+        try {
+          if (normalized) {
+            const validation = await validateYouTubeDataApiKey(normalized);
+            if (requestId !== saveRequestIdRef.current) {
+              return;
+            }
+            setYoutubeDataApiKeyStatusTone('success');
+            setYoutubeDataApiKeyStatusMessage(validation.message);
+          }
+
+          const saved = await updateSettings({
+            youtube_data_api_key: normalized
+          });
+          if (requestId !== saveRequestIdRef.current) {
+            return;
+          }
+          applySettings(saved);
+        } catch (err) {
+          if (requestId !== saveRequestIdRef.current) {
+            return;
+          }
+          setYoutubeDataApiKeyStatusTone('error');
+          setYoutubeDataApiKeyStatusMessage(
+            err instanceof Error ? err.message : 'Unexpected error while validating API key'
+          );
+        } finally {
+          if (requestId === saveRequestIdRef.current) {
+            setSettingsSaving(false);
+          }
+        }
+      })();
     },
-    [persistSettings]
+    [applySettings]
   );
 
   const setScoreThreshold = useCallback(
@@ -139,6 +191,8 @@ export function useSettings() {
     settingsMessage,
     llmRouterCliWarning,
     youtubeDataApiKey,
+    youtubeDataApiKeyStatusMessage,
+    youtubeDataApiKeyStatusTone,
     scoreThreshold,
     setLlmBackend,
     setYoutubeDataApiKey,

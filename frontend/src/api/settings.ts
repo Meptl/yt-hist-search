@@ -15,13 +15,37 @@ export type UpdateSettingsPayload = {
   score_threshold?: number;
 };
 
+export type ValidateYouTubeApiKeyResponse = {
+  valid: boolean;
+  message: string;
+};
+
+function readErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== 'object') {
+    return fallback;
+  }
+
+  const detail = (payload as { detail?: unknown }).detail;
+  if (typeof detail === 'string' && detail.trim().length > 0) {
+    return detail;
+  }
+
+  if (detail && typeof detail === 'object') {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
 export async function fetchSettings(): Promise<SettingsResponse> {
   const response = await fetch('/api/settings');
-  const payload = (await response.json()) as SettingsResponse | { detail: string };
+  const payload = (await response.json()) as unknown;
 
   if (!response.ok) {
-    const detail = 'detail' in payload ? payload.detail : 'Failed to load settings';
-    throw new Error(detail);
+    throw new Error(readErrorMessage(payload, 'Failed to load settings'));
   }
 
   return payload as SettingsResponse;
@@ -36,11 +60,31 @@ export async function updateSettings(payload: UpdateSettingsPayload): Promise<Se
     body: JSON.stringify(payload)
   });
 
-  const responsePayload = (await response.json()) as SettingsResponse | { detail: string };
+  const responsePayload = (await response.json()) as unknown;
   if (!response.ok) {
-    const detail = 'detail' in responsePayload ? responsePayload.detail : 'Failed to save settings';
-    throw new Error(detail);
+    throw new Error(readErrorMessage(responsePayload, 'Failed to save settings'));
   }
 
   return responsePayload as SettingsResponse;
+}
+
+export async function validateYouTubeDataApiKey(
+  youtubeDataApiKey: string | null
+): Promise<ValidateYouTubeApiKeyResponse> {
+  const response = await fetch('/api/validate-youtube-api-key', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      youtube_data_api_key: youtubeDataApiKey
+    })
+  });
+
+  const payload = (await response.json()) as unknown;
+  if (!response.ok) {
+    throw new Error(readErrorMessage(payload, 'Failed to validate YouTube Data API key'));
+  }
+
+  return payload as ValidateYouTubeApiKeyResponse;
 }

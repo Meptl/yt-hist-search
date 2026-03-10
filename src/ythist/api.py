@@ -34,6 +34,7 @@ from ythist.takeout import (
     to_llama_documents,
     write_csv,
 )
+from ythist.youtube_metadata import validate_youtube_api_key
 from ythist.settings import (
     LLM_ROUTER_OPTIONS,
     load_settings,
@@ -81,6 +82,15 @@ class ImportTakeoutResponse(BaseModel):
 
 class ValidateTakeoutResponse(BaseModel):
     parsed_entries: int
+
+
+class ValidateYouTubeApiKeyRequest(BaseModel):
+    youtube_data_api_key: str | None = None
+
+
+class ValidateYouTubeApiKeyResponse(BaseModel):
+    valid: bool
+    message: str
 
 
 class ImportErrorDetail(BaseModel):
@@ -578,6 +588,11 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
     youtube_data_api_key = current_settings["youtube_data_api_key"]
     if "youtube_data_api_key" in updates:
         youtube_data_api_key = updates["youtube_data_api_key"]
+        if isinstance(youtube_data_api_key, str) and youtube_data_api_key.strip():
+            try:
+                validate_youtube_api_key(youtube_data_api_key)
+            except RuntimeError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
     score_threshold = current_settings["score_threshold"]
     if "score_threshold" in updates and updates["score_threshold"] is not None:
         score_threshold = updates["score_threshold"]
@@ -594,6 +609,34 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
         youtube_data_api_key=settings["youtube_data_api_key"],
         score_threshold=settings["score_threshold"],
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
+    )
+
+
+@app.post("/api/validate-youtube-api-key", response_model=ValidateYouTubeApiKeyResponse)
+def validate_youtube_api_key_api_endpoint(
+    payload: ValidateYouTubeApiKeyRequest,
+) -> ValidateYouTubeApiKeyResponse:
+    key_candidate = payload.youtube_data_api_key
+    if not isinstance(key_candidate, str) or not key_candidate.strip():
+        return ValidateYouTubeApiKeyResponse(
+            valid=True,
+            message="API key cleared. Using the default shared key.",
+        )
+
+    try:
+        validate_youtube_api_key(key_candidate)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=ImportErrorDetail(
+                message=str(exc),
+                stack_trace="".join(traceback.format_exception(exc)),
+            ).model_dump(),
+        ) from exc
+
+    return ValidateYouTubeApiKeyResponse(
+        valid=True,
+        message="YouTube Data API key is valid.",
     )
 
 
