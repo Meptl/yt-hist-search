@@ -38,6 +38,7 @@ from ythist.youtube_metadata import validate_youtube_api_key
 from ythist.settings import (
     LLM_ROUTER_OPTIONS,
     load_settings,
+    resolve_youtube_data_api_key,
     save_settings,
 )
 from ythist.llm_router import LLMRouterError, rewrite_prompt_with_router
@@ -779,7 +780,9 @@ async def import_takeout_api_endpoint(
             index_dir=index_path,
             data_dir=data_path,
             skip_index=skip_index,
-            youtube_data_api_key=load_settings()["youtube_data_api_key"],
+            youtube_data_api_key=resolve_youtube_data_api_key(
+                load_settings()["youtube_data_api_key"]
+            ),
         )
     except HTTPException:
         raise
@@ -831,7 +834,9 @@ async def import_takeout_job_create_api_endpoint(
             "index_dir": Path(index_dir),
             "data_dir": Path(data_dir),
             "skip_index": skip_index,
-            "youtube_data_api_key": load_settings()["youtube_data_api_key"],
+            "youtube_data_api_key": resolve_youtube_data_api_key(
+                load_settings()["youtube_data_api_key"]
+            ),
         },
         daemon=True,
     )
@@ -917,7 +922,9 @@ def import_takeout_path_api_endpoint(
             index_dir=Path(payload.index_dir),
             data_dir=Path(payload.data_dir),
             skip_index=payload.skip_index,
-            youtube_data_api_key=current_settings["youtube_data_api_key"],
+            youtube_data_api_key=resolve_youtube_data_api_key(
+                current_settings["youtube_data_api_key"]
+            ),
         )
     except HTTPException:
         raise
