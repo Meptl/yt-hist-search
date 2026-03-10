@@ -167,11 +167,14 @@ class _ImportJobsState:
             job = self._jobs.get(job_id)
             if job is None:
                 return None
+            pending_messages = list(job.messages)
+            # Treat backend output as ephemeral: drain after each status read.
+            job.messages.clear()
             return ImportTakeoutJobStatusResponse(
                 job_id=job.job_id,
                 status=job.status,
                 progress=job.progress,
-                messages=list(job.messages),
+                messages=pending_messages,
                 result=job.result,
                 error=job.error,
             )

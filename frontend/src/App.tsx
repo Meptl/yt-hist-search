@@ -189,7 +189,15 @@ export function App() {
 
         const status = payload as ImportTakeoutJobStatusResponse;
         setImportProgress(status.progress);
-        setImportMessages(status.messages);
+        if (status.messages.length > 0) {
+          setImportMessages((existingMessages) => {
+            const combined = existingMessages.concat(status.messages);
+            if (combined.length > 500) {
+              return combined.slice(-500);
+            }
+            return combined;
+          });
+        }
         setImportJobState(status.status);
 
         if (status.status === 'completed') {
