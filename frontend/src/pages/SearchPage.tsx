@@ -143,8 +143,8 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
               <button
                 type="button"
                 className="icon-button"
-                aria-label="Import from file"
-                title="Import from file"
+                aria-label="Update from file"
+                title="Update from file"
               >
                 <Plus aria-hidden="true" focusable="false" />
               </button>
