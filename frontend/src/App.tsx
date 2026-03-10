@@ -94,7 +94,6 @@ export function App() {
   const [indexReady, setIndexReady] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<ImportErrorDetails | null>(null);
-  const [lastImportedPath, setLastImportedPath] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('search');
   const [activeImportJobId, setActiveImportJobId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState(0);
@@ -256,7 +255,6 @@ export function App() {
     setImportMessages([]);
     setImportJobState('running');
     setViewMode('importProgress');
-    setLastImportedPath(file.name);
 
     try {
       const formData = new FormData();
@@ -411,7 +409,6 @@ export function App() {
 
   return (
     <SearchPage
-      lastImportedPath={lastImportedPath}
       onOpenSettings={() => setViewMode('settings')}
     />
   );
