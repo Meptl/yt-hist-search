@@ -18,6 +18,7 @@ from ythist.takeout import (
     to_llama_documents,
     write_csv,
 )
+from ythist.youtube_metadata import validate_youtube_api_key
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -103,6 +104,17 @@ def _cmd_import_takeout(args: argparse.Namespace) -> None:
     entries = parse_watch_history(takeout_path)
     if not entries:
         raise ValueError(f"No watch entries found in {takeout_path}")
+
+    if not args.skip_index and isinstance(args.youtube_data_api_key, str):
+        normalized_api_key = args.youtube_data_api_key.strip()
+        if normalized_api_key:
+            try:
+                validate_youtube_api_key(normalized_api_key)
+            except RuntimeError as exc:
+                raise RuntimeError(
+                    "Import aborted: YouTube Data API key is invalid. "
+                    f"{exc}"
+                ) from exc
 
     csv_out = Path(args.csv_out)
     write_csv(entries, csv_out)

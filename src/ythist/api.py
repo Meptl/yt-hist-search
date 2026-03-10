@@ -336,6 +336,32 @@ def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
     )
 
 
+def _validate_import_api_key_or_raise(
+    *,
+    youtube_data_api_key: str | None,
+) -> None:
+    if not isinstance(youtube_data_api_key, str):
+        return
+
+    normalized_api_key = youtube_data_api_key.strip()
+    if not normalized_api_key:
+        return
+
+    try:
+        validate_youtube_api_key(normalized_api_key)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=ImportErrorDetail(
+                message=(
+                    "Import aborted: YouTube Data API key validation failed. "
+                    f"{exc}"
+                ),
+                stack_trace="".join(traceback.format_exception(exc)),
+            ).model_dump(),
+        ) from exc
+
+
 def _run_import_from_takeout_path(
     takeout_path: Path,
     index_dir: Path,
@@ -350,6 +376,8 @@ def _run_import_from_takeout_path(
             status_code=400,
             detail="Expected a .html/.htm/.json takeout file",
         )
+    if not skip_index:
+        _validate_import_api_key_or_raise(youtube_data_api_key=youtube_data_api_key)
 
     data_dir.mkdir(parents=True, exist_ok=True)
     index_dir.mkdir(parents=True, exist_ok=True)
@@ -422,6 +450,9 @@ def _run_import_job(
                 status_code=400,
                 detail="Expected a .html/.htm/.json takeout file",
             )
+        if not skip_index:
+            _IMPORT_JOBS.append_message(job_id, "Validating YouTube Data API key")
+            _validate_import_api_key_or_raise(youtube_data_api_key=youtube_data_api_key)
 
         data_dir.mkdir(parents=True, exist_ok=True)
         index_dir.mkdir(parents=True, exist_ok=True)

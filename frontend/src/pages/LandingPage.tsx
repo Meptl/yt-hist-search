@@ -142,7 +142,13 @@ export function LandingPage({
   }
 
   const canImport =
-    !!selectedTakeoutFile && validationResult !== null && validationResult.newEntries > 0;
+    !!selectedTakeoutFile &&
+    validationResult !== null &&
+    validationResult.newEntries > 0 &&
+    !(
+      youtubeDataApiKey.trim().length > 0 &&
+      youtubeDataApiKeyStatusTone === 'error'
+    );
 
   const detectionMessage =
     selectedTakeoutFile && validationResult !== null
