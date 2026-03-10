@@ -1,8 +1,20 @@
 export type LLMBackend = 'codex' | 'claude' | 'gemini' | 'opencode';
+export type BackendDriver = 'auto' | 'cpu' | 'cuda' | 'migraphx' | 'rocm' | 'directml';
+
+export type BackendDriverOption = {
+  value: BackendDriver;
+  label: string;
+  available: boolean;
+  detail: string | null;
+};
 
 export type SettingsResponse = {
   llm_router: LLMBackend | null;
   llm_router_options: LLMBackend[];
+  backend_driver: BackendDriver;
+  backend_driver_options: BackendDriverOption[];
+  backend_driver_detection_error: string | null;
+  backend_driver_available_providers: string[];
   youtube_data_api_key: string | null;
   score_threshold: number;
   llm_router_cli_warning: string | null;
@@ -11,6 +23,7 @@ export type SettingsResponse = {
 export type UpdateSettingsPayload = {
   llm_router?: LLMBackend | null;
   llm_backend?: LLMBackend | null;
+  backend_driver?: BackendDriver;
   youtube_data_api_key?: string | null;
   score_threshold?: number;
 };

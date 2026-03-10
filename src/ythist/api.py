@@ -24,6 +24,7 @@ from typing import Literal
 from ythist.indexing import (
     DEFAULT_INDEX_DIR,
     DEFAULT_SCORE_THRESHOLD,
+    get_backend_driver_capabilities,
     get_indexed_video_ids,
     index_ready,
     ingest_documents,
@@ -38,6 +39,8 @@ from ythist.takeout import (
 )
 from ythist.youtube_metadata import validate_youtube_api_key
 from ythist.settings import (
+    BACKEND_DRIVER_OPTIONS,
+    BackendDriver,
     LLM_ROUTER_OPTIONS,
     load_settings,
     resolve_youtube_data_api_key,
@@ -146,6 +149,10 @@ LLM_ROUTER_CLI_COMMANDS: dict[LLMRouter, str] = {
 class SettingsResponse(BaseModel):
     llm_router: LLMRouter | None = None
     llm_router_options: list[LLMRouter]
+    backend_driver: BackendDriver = "auto"
+    backend_driver_options: list[dict[str, str | bool | None]]
+    backend_driver_detection_error: str | None = None
+    backend_driver_available_providers: list[str]
     youtube_data_api_key: str | None = None
     score_threshold: float = DEFAULT_SCORE_THRESHOLD
     llm_router_cli_warning: str | None = None
@@ -154,6 +161,7 @@ class SettingsResponse(BaseModel):
 class UpdateSettingsRequest(BaseModel):
     llm_router: LLMRouter | None = None
     llm_backend: LLMRouter | None = None
+    backend_driver: BackendDriver | None = None
     youtube_data_api_key: str | None = None
     score_threshold: float | None = None
 
@@ -336,6 +344,41 @@ def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
     )
 
 
+def _backend_driver_from_settings_value(value: object) -> BackendDriver:
+    if isinstance(value, str) and value in BACKEND_DRIVER_OPTIONS:
+        return value
+    return "auto"
+
+
+def _build_settings_response(settings: dict[str, object]) -> SettingsResponse:
+    llm_router = settings["llm_router"]
+    backend_driver = _backend_driver_from_settings_value(settings.get("backend_driver"))
+    capabilities = get_backend_driver_capabilities()
+    return SettingsResponse(
+        llm_router=llm_router if isinstance(llm_router, str) else None,
+        llm_router_options=list(LLM_ROUTER_OPTIONS),
+        backend_driver=backend_driver,
+        backend_driver_options=list(capabilities["options"]),
+        backend_driver_detection_error=(
+            str(capabilities["detection_error"])
+            if capabilities["detection_error"] is not None
+            else None
+        ),
+        backend_driver_available_providers=[
+            str(provider) for provider in capabilities["available_providers"]
+        ],
+        youtube_data_api_key=(
+            str(settings["youtube_data_api_key"])
+            if settings.get("youtube_data_api_key") is not None
+            else None
+        ),
+        score_threshold=float(settings.get("score_threshold", DEFAULT_SCORE_THRESHOLD)),
+        llm_router_cli_warning=_llm_router_cli_warning(
+            llm_router if isinstance(llm_router, str) else None
+        ),
+    )
+
+
 def _validate_import_api_key_or_raise(
     *,
     youtube_data_api_key: str | None,
@@ -368,6 +411,7 @@ def _run_import_from_takeout_path(
     data_dir: Path,
     skip_index: bool,
     youtube_data_api_key: str | None,
+    backend_driver: BackendDriver,
 ) -> ImportTakeoutResponse:
     if not takeout_path.exists() or not takeout_path.is_file():
         raise HTTPException(status_code=400, detail=f"File not found: {takeout_path}")
@@ -410,7 +454,11 @@ def _run_import_from_takeout_path(
             exclude_video_ids=existing_video_ids,
         )
         try:
-            indexed_entries = ingest_documents(docs, index_dir=index_dir)
+            indexed_entries = ingest_documents(
+                docs,
+                index_dir=index_dir,
+                backend_driver=backend_driver,
+            )
         except Exception as exc:
             raise HTTPException(
                 status_code=500,
@@ -439,6 +487,7 @@ def _run_import_job(
     data_dir: Path,
     skip_index: bool,
     youtube_data_api_key: str | None,
+    backend_driver: BackendDriver,
 ) -> None:
     _IMPORT_JOBS.append_message(job_id, "Import started")
     _IMPORT_JOBS.set_progress(job_id, 5.0)
@@ -528,7 +577,11 @@ def _run_import_job(
 
                 progress_stream = _ProgressStream(_on_backend_progress)
                 with redirect_stderr(progress_stream):
-                    indexed_entries = ingest_documents(docs, index_dir=index_dir)
+                    indexed_entries = ingest_documents(
+                        docs,
+                        index_dir=index_dir,
+                        backend_driver=backend_driver,
+                    )
                 progress_stream.flush()
                 _IMPORT_JOBS.append_message(job_id, "Indexing completed")
                 _IMPORT_JOBS.set_progress(job_id, 99.0)
@@ -598,7 +651,13 @@ def on_startup() -> None:
             )
             return
         try:
-            warmup(index_dir=DEFAULT_INDEX_DIR)
+            current_settings = load_settings()
+            warmup(
+                index_dir=DEFAULT_INDEX_DIR,
+                backend_driver=_backend_driver_from_settings_value(
+                    current_settings.get("backend_driver")
+                ),
+            )
             elapsed_ms = (time.perf_counter() - started) * 1000
             logger.info("timing startup.warmup done elapsed_ms=%.2f", elapsed_ms)
         except Exception:
@@ -618,14 +677,7 @@ def health() -> dict[str, str]:
 def get_settings_api_endpoint() -> SettingsResponse:
     started = time.perf_counter()
     settings = load_settings()
-    llm_router = settings["llm_router"]
-    response = SettingsResponse(
-        llm_router=llm_router,
-        llm_router_options=list(LLM_ROUTER_OPTIONS),
-        youtube_data_api_key=settings["youtube_data_api_key"],
-        score_threshold=settings["score_threshold"],
-        llm_router_cli_warning=_llm_router_cli_warning(llm_router),
-    )
+    response = _build_settings_response(settings)
     elapsed_ms = (time.perf_counter() - started) * 1000
     logger.info("timing api.settings elapsed_ms=%.2f", elapsed_ms)
     return response
@@ -653,20 +705,17 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
     score_threshold = current_settings["score_threshold"]
     if "score_threshold" in updates and updates["score_threshold"] is not None:
         score_threshold = updates["score_threshold"]
+    backend_driver = _backend_driver_from_settings_value(
+        updates.get("backend_driver", current_settings.get("backend_driver"))
+    )
 
     settings = save_settings(
         llm_router=selected_router,
+        backend_driver=backend_driver,
         youtube_data_api_key=youtube_data_api_key,
         score_threshold=score_threshold,
     )
-    llm_router = settings["llm_router"]
-    return SettingsResponse(
-        llm_router=llm_router,
-        llm_router_options=list(LLM_ROUTER_OPTIONS),
-        youtube_data_api_key=settings["youtube_data_api_key"],
-        score_threshold=settings["score_threshold"],
-        llm_router_cli_warning=_llm_router_cli_warning(llm_router),
-    )
+    return _build_settings_response(settings)
 
 
 @app.post("/api/validate-youtube-api-key", response_model=ValidateYouTubeApiKeyResponse)
@@ -722,6 +771,7 @@ def search_api_endpoint(
 ) -> SearchResponse:
     settings = load_settings()
     llm_router = settings["llm_router"]
+    backend_driver = _backend_driver_from_settings_value(settings.get("backend_driver"))
     effective_score_threshold = (
         settings["score_threshold"]
         if score_threshold is None
@@ -748,6 +798,7 @@ def search_api_endpoint(
         hits = search(
             query=effective_query,
             index_dir=Path(index_dir),
+            backend_driver=backend_driver,
             score_threshold=effective_score_threshold,
             time_filter=time_filter,
         )
@@ -759,6 +810,7 @@ def search_api_endpoint(
             hits = search(
                 query=effective_query,
                 index_dir=Path(index_dir),
+                backend_driver=backend_driver,
                 score_threshold=effective_score_threshold,
                 time_filter=None,
             )
@@ -831,13 +883,17 @@ async def import_takeout_api_endpoint(
         tmp.write(content)
 
     try:
+        current_settings = load_settings()
         return _run_import_from_takeout_path(
             takeout_path=temp_file_path,
             index_dir=index_path,
             data_dir=data_path,
             skip_index=skip_index,
             youtube_data_api_key=resolve_youtube_data_api_key(
-                load_settings()["youtube_data_api_key"]
+                current_settings["youtube_data_api_key"]
+            ),
+            backend_driver=_backend_driver_from_settings_value(
+                current_settings.get("backend_driver")
             ),
         )
     except HTTPException:
@@ -882,6 +938,7 @@ async def import_takeout_job_create_api_endpoint(
         tmp.write(content)
 
     job = _IMPORT_JOBS.create_job()
+    current_settings = load_settings()
     worker = Thread(
         target=_run_import_job,
         kwargs={
@@ -891,7 +948,10 @@ async def import_takeout_job_create_api_endpoint(
             "data_dir": Path(data_dir),
             "skip_index": skip_index,
             "youtube_data_api_key": resolve_youtube_data_api_key(
-                load_settings()["youtube_data_api_key"]
+                current_settings["youtube_data_api_key"]
+            ),
+            "backend_driver": _backend_driver_from_settings_value(
+                current_settings.get("backend_driver")
             ),
         },
         daemon=True,
@@ -992,6 +1052,9 @@ def import_takeout_path_api_endpoint(
             skip_index=payload.skip_index,
             youtube_data_api_key=resolve_youtube_data_api_key(
                 current_settings["youtube_data_api_key"]
+            ),
+            backend_driver=_backend_driver_from_settings_value(
+                current_settings.get("backend_driver")
             ),
         )
     except HTTPException:

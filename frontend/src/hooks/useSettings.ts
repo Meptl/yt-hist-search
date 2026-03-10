@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  type BackendDriver,
+  type BackendDriverOption,
   fetchSettings,
   type LLMBackend,
   type SettingsResponse,
@@ -16,6 +18,10 @@ export function useSettings() {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [llmRouterCliWarning, setLlmRouterCliWarning] = useState<string | null>(null);
+  const [backendDriver, setBackendDriverState] = useState<BackendDriver>('auto');
+  const [backendDriverOptions, setBackendDriverOptions] = useState<BackendDriverOption[]>([]);
+  const [backendDriverDetectionError, setBackendDriverDetectionError] = useState<string | null>(null);
+  const [backendDriverAvailableProviders, setBackendDriverAvailableProviders] = useState<string[]>([]);
   const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
   const [youtubeDataApiKey, setYoutubeDataApiKeyState] = useState('');
   const [youtubeDataApiKeyStatusMessage, setYoutubeDataApiKeyStatusMessage] = useState<string | null>(null);
@@ -32,6 +38,10 @@ export function useSettings() {
   const applySettings = useCallback((settings: SettingsResponse) => {
     setLlmBackendState(settings.llm_router ?? 'none');
     setLlmBackendOptions(settings.llm_router_options);
+    setBackendDriverState(settings.backend_driver);
+    setBackendDriverOptions(settings.backend_driver_options);
+    setBackendDriverDetectionError(settings.backend_driver_detection_error);
+    setBackendDriverAvailableProviders(settings.backend_driver_available_providers);
     setYoutubeDataApiKeyState(settings.youtube_data_api_key ?? '');
     setScoreThresholdState(settings.score_threshold);
     setLlmRouterCliWarning(settings.llm_router_cli_warning);
@@ -183,7 +193,21 @@ export function useSettings() {
     [persistSettings]
   );
 
+  const setBackendDriver = useCallback(
+    (next: BackendDriver) => {
+      setBackendDriverState(next);
+      void persistSettings({
+        backend_driver: next
+      });
+    },
+    [persistSettings]
+  );
+
   return {
+    backendDriver,
+    backendDriverOptions,
+    backendDriverDetectionError,
+    backendDriverAvailableProviders,
     llmBackend,
     llmBackendOptions,
     settingsLoading,
@@ -195,6 +219,7 @@ export function useSettings() {
     youtubeDataApiKeyStatusTone,
     scoreThreshold,
     setLlmBackend,
+    setBackendDriver,
     setYoutubeDataApiKey,
     setScoreThreshold
   };

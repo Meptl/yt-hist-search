@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import Event, Lock
-from typing import Iterable
+from typing import Iterable, Literal
 
 from llama_index.core import (
     Document,
@@ -26,8 +26,17 @@ DEFAULT_INDEX_DIR = Path("dev_assets/index")
 DEFAULT_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 DEFAULT_SCORE_THRESHOLD = 0.7
 DEFAULT_RETRIEVAL_CANDIDATE_K = 50
+BackendDriver = Literal["auto", "cpu", "cuda", "migraphx", "rocm", "directml"]
+BACKEND_DRIVER_OPTIONS: tuple[BackendDriver, ...] = (
+    "auto",
+    "cpu",
+    "cuda",
+    "migraphx",
+    "rocm",
+    "directml",
+)
 _CACHE_LOCK = Lock()
-_EMBED_MODELS: dict[str, FastEmbedEmbedding] = {}
+_EMBED_MODELS: dict[tuple[str, tuple[str, ...] | None], FastEmbedEmbedding] = {}
 _INDEXES: dict[tuple[str, str], VectorStoreIndex] = {}
 _INDEX_LOAD_EVENTS: dict[tuple[str, str], Event] = {}
 _INDEX_LOAD_ERRORS: dict[tuple[str, str], Exception] = {}
@@ -41,6 +50,26 @@ _INDEX_MARKER_FILES = (
 _TIME_EXPRESSION_RE = re.compile(r"^(>=|<=|>|<)\s*(.+)$")
 _YEAR_RE = re.compile(r"^\d{4}$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_BACKEND_DRIVER_PROVIDER_MAP: dict[BackendDriver, list[str] | None] = {
+    "auto": None,
+    "cpu": ["CPUExecutionProvider"],
+    "cuda": ["CUDAExecutionProvider", "CPUExecutionProvider"],
+    "migraphx": [
+        "MIGraphXExecutionProvider",
+        "ROCMExecutionProvider",
+        "CPUExecutionProvider",
+    ],
+    "rocm": ["ROCMExecutionProvider", "CPUExecutionProvider"],
+    "directml": ["DmlExecutionProvider", "CPUExecutionProvider"],
+}
+_BACKEND_DRIVER_LABELS: dict[BackendDriver, str] = {
+    "auto": "Auto (recommended)",
+    "cpu": "CPU only",
+    "cuda": "NVIDIA CUDA",
+    "migraphx": "AMD MIGraphX",
+    "rocm": "AMD ROCm",
+    "directml": "DirectML (Windows)",
+}
 
 
 @dataclass(frozen=True)
@@ -155,13 +184,80 @@ def _time_filter_to_metadata_filters(time_filter: str) -> MetadataFilters:
     )
 
 
-def _set_embedding_model(model_name: str = DEFAULT_EMBED_MODEL) -> None:
+def _set_embedding_model(
+    model_name: str = DEFAULT_EMBED_MODEL,
+    backend_driver: BackendDriver = "auto",
+) -> None:
+    providers = _resolve_embed_providers(backend_driver=backend_driver)
+    cache_key = (model_name, tuple(providers) if providers else None)
     with _CACHE_LOCK:
-        embed_model = _EMBED_MODELS.get(model_name)
+        embed_model = _EMBED_MODELS.get(cache_key)
         if embed_model is None:
-            embed_model = FastEmbedEmbedding(model_name=model_name)
-            _EMBED_MODELS[model_name] = embed_model
+            embed_model = FastEmbedEmbedding(
+                model_name=model_name,
+                providers=providers,
+            )
+            _EMBED_MODELS[cache_key] = embed_model
     Settings.embed_model = embed_model
+
+
+def _resolve_embed_providers(
+    *,
+    backend_driver: BackendDriver = "auto",
+) -> list[str] | None:
+    configured = _BACKEND_DRIVER_PROVIDER_MAP.get(backend_driver)
+    if configured is not None:
+        return list(configured)
+    return None
+
+
+def _resolve_available_onnx_providers() -> tuple[list[str], str | None]:
+    try:
+        import onnxruntime as ort
+    except Exception as exc:
+        return (["CPUExecutionProvider"], f"ONNX Runtime not importable: {exc}")
+
+    try:
+        providers = ort.get_available_providers()
+    except Exception as exc:
+        return (["CPUExecutionProvider"], f"Unable to query ONNX providers: {exc}")
+    if not providers:
+        return (["CPUExecutionProvider"], "No ONNX providers reported; using CPU fallback")
+    return (list(providers), None)
+
+
+def get_backend_driver_capabilities() -> dict[str, object]:
+    available_providers, error = _resolve_available_onnx_providers()
+    available_provider_set = set(available_providers)
+    options: list[dict[str, str | bool | None]] = []
+    for driver in BACKEND_DRIVER_OPTIONS:
+        required_providers = _BACKEND_DRIVER_PROVIDER_MAP[driver]
+        if required_providers is None:
+            available = True
+            detail = (
+                "Uses automatic provider selection. Set explicit driver to force a provider."
+            )
+        else:
+            first_provider = required_providers[0]
+            available = first_provider in available_provider_set
+            detail = (
+                f"Requires `{first_provider}`."
+                if not available
+                else f"Detected `{first_provider}`."
+            )
+        options.append(
+            {
+                "value": driver,
+                "label": _BACKEND_DRIVER_LABELS[driver],
+                "available": available,
+                "detail": detail,
+            }
+        )
+    return {
+        "available_providers": available_providers,
+        "detection_error": error,
+        "options": options,
+    }
 
 
 def _load_index(index_dir: Path) -> VectorStoreIndex:
@@ -292,12 +388,13 @@ def ingest_documents(
     documents: Iterable[Document],
     index_dir: Path = DEFAULT_INDEX_DIR,
     model_name: str = DEFAULT_EMBED_MODEL,
+    backend_driver: BackendDriver = "auto",
 ) -> int:
     docs = list(documents)
     if not docs:
         return 0
 
-    _set_embedding_model(model_name)
+    _set_embedding_model(model_name, backend_driver=backend_driver)
     index_dir.mkdir(parents=True, exist_ok=True)
     with _INDEX_WRITE_LOCK:
         indexed_video_ids = _resolve_indexed_video_ids(index_dir)
@@ -331,6 +428,7 @@ def search(
     query: str,
     index_dir: Path = DEFAULT_INDEX_DIR,
     model_name: str = DEFAULT_EMBED_MODEL,
+    backend_driver: BackendDriver = "auto",
     score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     retrieval_candidate_k: int = DEFAULT_RETRIEVAL_CANDIDATE_K,
     time_filter: str | None = None,
@@ -340,7 +438,7 @@ def search(
             f"Index directory not found: {index_dir}. Run import-takeout first."
         )
 
-    _set_embedding_model(model_name)
+    _set_embedding_model(model_name, backend_driver=backend_driver)
     index = _get_cached_index(index_dir, model_name)
     metadata_filters = (
         _time_filter_to_metadata_filters(time_filter)
@@ -396,9 +494,10 @@ def search(
 def warmup(
     index_dir: Path = DEFAULT_INDEX_DIR,
     model_name: str = DEFAULT_EMBED_MODEL,
+    backend_driver: BackendDriver = "auto",
 ) -> bool:
     """Warm embedding and, when available, preload the persisted index."""
-    _set_embedding_model(model_name)
+    _set_embedding_model(model_name, backend_driver=backend_driver)
     if not index_dir.exists():
         return False
 
