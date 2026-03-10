@@ -57,7 +57,6 @@ function extractFieldValue(text: string, label: string): string | null {
 
 export function SearchPage({ onOpenSettings }: SearchPageProps) {
   const [query, setQuery] = useState('');
-  const [scoreThreshold, setScoreThreshold] = useState(0.55);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -89,8 +88,7 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
 
     try {
       const params = new URLSearchParams({
-        q: trimmed,
-        score_threshold: String(scoreThreshold)
+        q: trimmed
       });
       const response = await fetch(`/api/search?${params.toString()}`);
       const rawBody = await response.text();
@@ -183,16 +181,6 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
           />
 
           <div className="controls">
-            <label htmlFor="score-threshold">Score threshold: {scoreThreshold.toFixed(2)}</label>
-            <input
-              id="score-threshold"
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={scoreThreshold}
-              onChange={(event) => setScoreThreshold(Number(event.target.value))}
-            />
             <button type="submit" disabled={loading}>
               {loading ? 'Searching...' : 'Search History'}
             </button>

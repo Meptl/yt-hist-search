@@ -23,7 +23,7 @@ from llama_index.core.vector_stores.types import (
 
 DEFAULT_INDEX_DIR = Path("dev_assets/index")
 DEFAULT_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
-DEFAULT_SCORE_THRESHOLD = 0.55
+DEFAULT_SCORE_THRESHOLD = 0.7
 DEFAULT_RETRIEVAL_CANDIDATE_K = 50
 _CACHE_LOCK = Lock()
 _EMBED_MODELS: dict[str, FastEmbedEmbedding] = {}

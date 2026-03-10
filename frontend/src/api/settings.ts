@@ -4,6 +4,7 @@ export type SettingsResponse = {
   llm_router: LLMBackend | null;
   llm_router_options: LLMBackend[];
   youtube_data_api_key: string | null;
+  score_threshold: number;
   llm_router_cli_warning: string | null;
 };
 
@@ -11,6 +12,7 @@ export type UpdateSettingsPayload = {
   llm_router?: LLMBackend | null;
   llm_backend?: LLMBackend | null;
   youtube_data_api_key?: string | null;
+  score_threshold?: number;
 };
 
 export async function fetchSettings(): Promise<SettingsResponse> {

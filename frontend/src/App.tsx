@@ -108,8 +108,10 @@ export function App() {
     settingsMessage,
     llmRouterCliWarning,
     youtubeDataApiKey,
+    scoreThreshold,
     setLlmBackend,
-    setYoutubeDataApiKey
+    setYoutubeDataApiKey,
+    setScoreThreshold
   } = useSettings();
 
   useEffect(() => {
@@ -408,8 +410,10 @@ export function App() {
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
         youtubeDataApiKey={youtubeDataApiKey}
+        scoreThreshold={scoreThreshold}
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
+        onSetScoreThreshold={setScoreThreshold}
         onBack={() => setViewMode('search')}
       />
     );

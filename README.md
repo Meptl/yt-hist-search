@@ -45,7 +45,7 @@ ythist import-takeout watch-history.html --skip-index
 ## 4. Semantic search
 
 ```bash
-ythist search "videos about RAG and vectors" --score-threshold 0.55
+ythist search "videos about RAG and vectors" --score-threshold 0.70
 ```
 
 ## 5. Run local API server
@@ -58,8 +58,8 @@ Then use:
 
 ```bash
 curl http://127.0.0.1:8000/health
-curl "http://127.0.0.1:8000/search?q=python%20videos&score_threshold=0.55"
-curl "http://127.0.0.1:8000/api/search?q=python%20videos&score_threshold=0.55"
+curl "http://127.0.0.1:8000/search?q=python%20videos&score_threshold=0.70"
+curl "http://127.0.0.1:8000/api/search?q=python%20videos&score_threshold=0.70"
 ```
 
 ## 6. Frontend setup

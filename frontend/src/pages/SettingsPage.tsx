@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { LlmBackendField } from '../components/LlmBackendField';
+import { ScoreThresholdField } from '../components/ScoreThresholdField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
 import { type LLMBackend } from '../api/settings';
 import { type LLMBackendSelection } from '../hooks/useSettings';
@@ -13,8 +14,10 @@ type SettingsPageProps = {
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
   youtubeDataApiKey: string;
+  scoreThreshold: number;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
+  onSetScoreThreshold: (next: number) => void;
   onBack: () => void;
 };
 
@@ -26,8 +29,10 @@ export function SettingsPage({
   settingsMessage,
   llmRouterCliWarning,
   youtubeDataApiKey,
+  scoreThreshold,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
+  onSetScoreThreshold,
   onBack
 }: SettingsPageProps) {
   useEffect(() => {
@@ -80,6 +85,15 @@ export function SettingsPage({
             loading={settingsLoading}
             saving={settingsSaving}
             onChange={onSetYoutubeDataApiKey}
+            compact
+          />
+
+          <ScoreThresholdField
+            id="settings-score-threshold"
+            value={scoreThreshold}
+            loading={settingsLoading}
+            saving={settingsSaving}
+            onChange={onSetScoreThreshold}
             compact
           />
         </section>

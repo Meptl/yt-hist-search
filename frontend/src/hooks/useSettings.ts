@@ -11,6 +11,7 @@ export function useSettings() {
   const [llmRouterCliWarning, setLlmRouterCliWarning] = useState<string | null>(null);
   const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
   const [youtubeDataApiKey, setYoutubeDataApiKeyState] = useState('');
+  const [scoreThreshold, setScoreThresholdState] = useState(0.7);
   const saveRequestIdRef = useRef(0);
   const [llmBackendOptions, setLlmBackendOptions] = useState<LLMBackend[]>([
     'codex',
@@ -23,6 +24,7 @@ export function useSettings() {
     setLlmBackendState(settings.llm_router ?? 'none');
     setLlmBackendOptions(settings.llm_router_options);
     setYoutubeDataApiKeyState(settings.youtube_data_api_key ?? '');
+    setScoreThresholdState(settings.score_threshold);
     setLlmRouterCliWarning(settings.llm_router_cli_warning);
   }, []);
 
@@ -119,6 +121,16 @@ export function useSettings() {
     [persistSettings]
   );
 
+  const setScoreThreshold = useCallback(
+    (next: number) => {
+      setScoreThresholdState(next);
+      void persistSettings({
+        score_threshold: next
+      });
+    },
+    [persistSettings]
+  );
+
   return {
     llmBackend,
     llmBackendOptions,
@@ -127,7 +139,9 @@ export function useSettings() {
     settingsMessage,
     llmRouterCliWarning,
     youtubeDataApiKey,
+    scoreThreshold,
     setLlmBackend,
-    setYoutubeDataApiKey
+    setYoutubeDataApiKey,
+    setScoreThreshold
   };
 }

@@ -128,6 +128,7 @@ class SettingsResponse(BaseModel):
     llm_router: LLMRouter | None = None
     llm_router_options: list[LLMRouter]
     youtube_data_api_key: str | None = None
+    score_threshold: float = DEFAULT_SCORE_THRESHOLD
     llm_router_cli_warning: str | None = None
 
 
@@ -135,6 +136,7 @@ class UpdateSettingsRequest(BaseModel):
     llm_router: LLMRouter | None = None
     llm_backend: LLMRouter | None = None
     youtube_data_api_key: str | None = None
+    score_threshold: float | None = None
 
 
 class _ImportJob:
@@ -551,6 +553,7 @@ def get_settings_api_endpoint() -> SettingsResponse:
         llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
         youtube_data_api_key=settings["youtube_data_api_key"],
+        score_threshold=settings["score_threshold"],
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
     elapsed_ms = (time.perf_counter() - started) * 1000
@@ -572,16 +575,21 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
     youtube_data_api_key = current_settings["youtube_data_api_key"]
     if "youtube_data_api_key" in updates:
         youtube_data_api_key = updates["youtube_data_api_key"]
+    score_threshold = current_settings["score_threshold"]
+    if "score_threshold" in updates and updates["score_threshold"] is not None:
+        score_threshold = updates["score_threshold"]
 
     settings = save_settings(
         llm_router=selected_router,
         youtube_data_api_key=youtube_data_api_key,
+        score_threshold=score_threshold,
     )
     llm_router = settings["llm_router"]
     return SettingsResponse(
         llm_router=llm_router,
         llm_router_options=list(LLM_ROUTER_OPTIONS),
         youtube_data_api_key=settings["youtube_data_api_key"],
+        score_threshold=settings["score_threshold"],
         llm_router_cli_warning=_llm_router_cli_warning(llm_router),
     )
 
@@ -606,11 +614,16 @@ def index_status_api_endpoint(
 @app.get("/api/search", response_model=SearchResponse)
 def search_api_endpoint(
     q: str,
-    score_threshold: float = DEFAULT_SCORE_THRESHOLD,
+    score_threshold: float | None = None,
     index_dir: str = str(DEFAULT_INDEX_DIR),
 ) -> SearchResponse:
     settings = load_settings()
     llm_router = settings["llm_router"]
+    effective_score_threshold = (
+        settings["score_threshold"]
+        if score_threshold is None
+        else score_threshold
+    )
     effective_query = q
     static_filters: dict[str, str] = {}
     errors: list[str] = []
@@ -632,7 +645,7 @@ def search_api_endpoint(
         hits = search(
             query=effective_query,
             index_dir=Path(index_dir),
-            score_threshold=score_threshold,
+            score_threshold=effective_score_threshold,
             time_filter=time_filter,
         )
     except ValueError as exc:
@@ -643,7 +656,7 @@ def search_api_endpoint(
             hits = search(
                 query=effective_query,
                 index_dir=Path(index_dir),
-                score_threshold=score_threshold,
+                score_threshold=effective_score_threshold,
                 time_filter=None,
             )
         else:
@@ -873,7 +886,7 @@ def import_takeout_path_api_endpoint(
 @app.get("/search")
 def search_endpoint(
     q: str,
-    score_threshold: float = DEFAULT_SCORE_THRESHOLD,
+    score_threshold: float | None = None,
     index_dir: str = str(DEFAULT_INDEX_DIR),
 ) -> SearchResponse:
     return search_api_endpoint(

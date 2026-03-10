@@ -509,6 +509,23 @@ body {
   gap: 0.8rem;
 }
 
+.settings-threshold-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.settings-threshold-row input[type='range'] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.settings-threshold-row output {
+  min-width: 2.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
 .input-with-icon {
   position: relative;
 }
