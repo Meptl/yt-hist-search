@@ -55,6 +55,8 @@ class SearchResponseItem(BaseModel):
     channel_name: str | None = None
     channel_url: str | None = None
     channel_logo_url: str | None = None
+    published_at: str | None = None
+    view_count: str | None = None
 
 
 class SearchResponse(BaseModel):
@@ -676,6 +678,8 @@ def search_api_endpoint(
             channel_name=hit.channel_name,
             channel_url=hit.channel_url,
             channel_logo_url=hit.channel_logo_url,
+            published_at=hit.published_at,
+            view_count=hit.view_count,
         )
         for hit in hits
     ]

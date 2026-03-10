@@ -12,6 +12,8 @@ type SearchResponseItem = {
   channel_logo_url?: string | null;
   video_id?: string | null;
   video_url?: string | null;
+  published_at?: string | null;
+  view_count?: string | null;
 };
 
 type SearchResponse = {

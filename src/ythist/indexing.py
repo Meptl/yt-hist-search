@@ -52,6 +52,8 @@ class SearchHit:
     channel_name: str | None
     channel_url: str | None
     channel_logo_url: str | None
+    published_at: str | None
+    view_count: str | None
 
 
 @dataclass(frozen=True)
@@ -305,6 +307,10 @@ def search(
                     if metadata.get("channel_logo_url")
                     else None
                 ),
+                published_at=(
+                    str(metadata["published_at"]) if metadata.get("published_at") else None
+                ),
+                view_count=str(metadata["view_count"]) if metadata.get("view_count") else None,
             )
         )
     return hits
