@@ -1,20 +1,26 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Literal
 
 LLMRouter = Literal["codex", "claude", "gemini", "opencode"]
 LLM_ROUTER_OPTIONS: tuple[LLMRouter, ...] = ("codex", "claude", "gemini", "opencode")
+_DEFAULT_YOUTUBE_DATA_API_KEY = "AIzaSyBzL4F2Uq9Qd44U8W4KjYNa0EoePeq5XP8"
 
 _SETTINGS_DIR = Path.home() / ".local" / "share" / "ythist"
 _SETTINGS_PATH = _SETTINGS_DIR / "settings.json"
 
 
 def default_settings() -> dict[str, LLMRouter | str | float | None]:
+    env_api_key = os.getenv("YOUTUBE_API_KEY")
+    normalized_env_api_key = (
+        env_api_key.strip() if isinstance(env_api_key, str) and env_api_key.strip() else None
+    )
     return {
         "llm_router": None,
-        "youtube_data_api_key": None,
+        "youtube_data_api_key": normalized_env_api_key or _DEFAULT_YOUTUBE_DATA_API_KEY,
         "score_threshold": 0.7,
     }
 
@@ -69,10 +75,16 @@ def load_settings() -> dict[str, LLMRouter | str | float | None]:
     if api_key_value is None:
         # Backward-compat: allow older key names.
         api_key_value = payload.get("youtube_api_key")
+    normalized_api_key = _normalize_api_key(api_key_value)
+    fallback_api_key = defaults["youtube_data_api_key"]
     score_threshold_value = payload.get("score_threshold")
     return {
         "llm_router": _normalize_router(router_value),
-        "youtube_data_api_key": _normalize_api_key(api_key_value),
+        "youtube_data_api_key": (
+            normalized_api_key
+            if normalized_api_key is not None
+            else (fallback_api_key if isinstance(fallback_api_key, str) else None)
+        ),
         "score_threshold": _normalize_score_threshold(score_threshold_value),
     }
 
