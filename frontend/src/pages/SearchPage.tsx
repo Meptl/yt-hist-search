@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent, useMemo, useState } from 'react';
+import { FormEvent, KeyboardEvent, useState } from 'react';
 import { Cog, Plus } from 'lucide-react';
 import { YoutubeVideoCard } from '../components/YoutubeVideoCard';
 
@@ -63,14 +63,6 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
   const [results, setResults] = useState<SearchResponseItem[]>([]);
 
   const hasResults = results.length > 0;
-
-  const summary = useMemo(() => {
-    if (loading) return 'Searching your history...';
-    if (error) return error;
-    if (warnings.length > 0) return `${warnings.length} warning${warnings.length === 1 ? '' : 's'}`;
-    if (!hasResults) return 'Run a query to search your indexed watch history.';
-    return `${results.length} results`;
-  }, [error, hasResults, loading, results.length, warnings.length]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -182,18 +174,13 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
 
           <div className="controls">
             <button type="submit" disabled={loading}>
-              {loading ? 'Searching...' : 'Search History'}
+              Search History
             </button>
           </div>
         </form>
 
         <section className="results-panel" aria-live="polite">
-          <div className="results-header">
-            <h2>Results</h2>
-            <span className={error ? 'error-summary' : undefined}>{summary}</span>
-          </div>
-
-          {hasResults ? (
+          {!loading && hasResults ? (
             <>
               {warnings.length > 0 ? (
                 <div className="empty-state error-state">
@@ -222,7 +209,7 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
                 })}
               </ul>
             </>
-          ) : (
+          ) : !loading ? (
             <div className={`empty-state${error ? ' error-state' : ''}`}>
               {error ? (
                 <pre>{error}</pre>
@@ -233,8 +220,14 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
                 </>
               )}
             </div>
-          )}
+          ) : null}
         </section>
+
+        {loading ? (
+          <div className="bottom-loading-indicator" aria-live="polite" aria-label="Loading">
+            <span className="loading-spinner" aria-hidden="true" />
+          </div>
+        ) : null}
       </main>
     </div>
   );
