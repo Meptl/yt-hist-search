@@ -51,10 +51,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     import_takeout_cmd.add_argument(
         "--youtube-data-api-key",
-        default=os.getenv("YOUTUBE_API_KEY"),
+        default=os.getenv("YOUTUBE_STRING"),
         help=(
             "YouTube Data API key for enrichment. "
-            "Defaults to env var YOUTUBE_API_KEY when set."
+            "Defaults to env var YOUTUBE_STRING when set."
         ),
     )
 

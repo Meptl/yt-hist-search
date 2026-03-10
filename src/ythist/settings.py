@@ -7,7 +7,7 @@ from typing import Literal
 
 LLMRouter = Literal["codex", "claude", "gemini", "opencode"]
 LLM_ROUTER_OPTIONS: tuple[LLMRouter, ...] = ("codex", "claude", "gemini", "opencode")
-_DEFAULT_YOUTUBE_DATA_API_KEY = "AIzaSyBzL4F2Uq9Qd44U8W4KjYNa0EoePeq5XP8"
+_DEFAULT_YOUTUBE_DATA_STRING = "AIzaSyBzL4F2Uq9Qd44U8W4KjYNa0EoePeq5XP8"
 
 _SETTINGS_DIR = Path.home() / ".local" / "share" / "ythist"
 _SETTINGS_PATH = _SETTINGS_DIR / "settings.json"
@@ -37,7 +37,7 @@ def _normalize_api_key(value: object) -> str | None:
 
 def _normalize_stored_api_key(value: object) -> str | None:
     normalized = _normalize_api_key(value)
-    if normalized == _DEFAULT_YOUTUBE_DATA_API_KEY:
+    if normalized == _DEFAULT_YOUTUBE_DATA_STRING:
         return None
     return normalized
 
@@ -47,7 +47,7 @@ def resolve_youtube_data_api_key(configured_api_key: str | None) -> str:
     if normalized_configured is not None:
         return normalized_configured
 
-    return _DEFAULT_YOUTUBE_DATA_API_KEY
+    return _DEFAULT_YOUTUBE_DATA_STRING
 
 
 def _normalize_score_threshold(value: object) -> float:

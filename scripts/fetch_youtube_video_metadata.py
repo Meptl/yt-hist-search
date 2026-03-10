@@ -2,8 +2,8 @@
 """Fetch and print YouTube metadata for a single video ID.
 
 Usage:
-  YOUTUBE_API_KEY=... python scripts/fetch_youtube_video_metadata.py
-  YOUTUBE_API_KEY=... python scripts/fetch_youtube_video_metadata.py --video-id dQw4w9WgXcQ
+  YOUTUBE_STRING=... python scripts/fetch_youtube_video_metadata.py
+  YOUTUBE_STRING=... python scripts/fetch_youtube_video_metadata.py --video-id dQw4w9WgXcQ
 """
 
 from __future__ import annotations
@@ -55,12 +55,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    api_key = os.getenv("YOUTUBE_API_KEY")
+    api_key = os.getenv("YOUTUBE_STRING")
 
     if not api_key:
         print(
-            "Missing YOUTUBE_API_KEY. Set it and run again, e.g.\n"
-            "  YOUTUBE_API_KEY=your_key python scripts/fetch_youtube_video_metadata.py",
+            "Missing YOUTUBE_STRING. Set it and run again, e.g.\n"
+            "  YOUTUBE_STRING=your_key python scripts/fetch_youtube_video_metadata.py",
             file=sys.stderr,
         )
         return 1
