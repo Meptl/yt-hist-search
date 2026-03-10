@@ -63,7 +63,6 @@ export function ImportProgressPage({
       <main className="app-shell import-progress-shell">
         <section className="import-progress-panel">
           <h1>{title}</h1>
-          <p className="status-line mono">{clampedProgress.toFixed(0)}%</p>
           <div
             className="import-progress-track"
             role="progressbar"
@@ -76,11 +75,6 @@ export function ImportProgressPage({
               style={{ width: `${clampedProgress}%` }}
             />
           </div>
-          <p className="status-line">
-            {status === 'failed'
-              ? 'Review backend output below.'
-              : 'Live backend output'}
-          </p>
           <pre
             ref={logRef}
             className="import-progress-log"

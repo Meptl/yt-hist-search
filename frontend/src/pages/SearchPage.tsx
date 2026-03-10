@@ -56,7 +56,7 @@ function extractFieldValue(text: string, label: string): string | null {
 }
 
 export function SearchPage({ onOpenSettings }: SearchPageProps) {
-  const [query, setQuery] = useState('videos about retrieval and embeddings');
+  const [query, setQuery] = useState('');
   const [scoreThreshold, setScoreThreshold] = useState(0.55);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,7 +179,7 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onQueryKeyDown}
-            placeholder="e.g. tutorials I watched about sqlite indexing"
+            placeholder="videos about RAG and embeddings"
           />
 
           <div className="controls">
