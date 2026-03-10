@@ -26,12 +26,14 @@ type ValidateTakeoutResponse = {
   parsed_entries: number;
   deduped_entries: number;
   new_entries: number;
+  already_indexed_entries: number;
 };
 
 type TakeoutValidationResult = {
   parsedEntries: number;
   dedupedEntries: number;
   newEntries: number;
+  alreadyIndexedEntries: number;
 };
 
 type ImportTakeoutResponse = {
@@ -343,7 +345,8 @@ export function App() {
       return {
         parsedEntries: parsed.parsed_entries,
         dedupedEntries: parsed.deduped_entries,
-        newEntries: parsed.new_entries
+        newEntries: parsed.new_entries,
+        alreadyIndexedEntries: parsed.already_indexed_entries
       };
     } catch (err) {
       console.error('Validate takeout failed', err);

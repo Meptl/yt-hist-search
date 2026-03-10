@@ -15,6 +15,7 @@ type TakeoutValidationResult = {
   parsedEntries: number;
   dedupedEntries: number;
   newEntries: number;
+  alreadyIndexedEntries: number;
 };
 
 type LandingPageProps = {
@@ -61,6 +62,7 @@ export function LandingPage({
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedTakeoutFile, setSelectedTakeoutFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] = useState<TakeoutValidationResult | null>(null);
+  const [isValidatingTakeout, setIsValidatingTakeout] = useState(false);
 
   useEffect(() => {
     if (!allowBackToSearch) {
@@ -96,12 +98,13 @@ export function LandingPage({
 
     setSelectedTakeoutFile(file);
     setValidationResult(null);
+    setIsValidatingTakeout(true);
 
     const nextResult = await onValidateTakeoutFile(file);
-    if (validationRequestIdRef.current !== requestId) {
-      return;
+    if (validationRequestIdRef.current === requestId) {
+      setValidationResult(nextResult);
+      setIsValidatingTakeout(false);
     }
-    setValidationResult(nextResult);
   }
 
   async function triggerImport() {
@@ -112,6 +115,7 @@ export function LandingPage({
     if (importSucceeded) {
       setSelectedTakeoutFile(null);
       setValidationResult(null);
+      setIsValidatingTakeout(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -142,7 +146,9 @@ export function LandingPage({
 
   const detectionMessage =
     selectedTakeoutFile && validationResult !== null
-      ? `Detected ${validationResult.newEntries} new entr${validationResult.newEntries === 1 ? 'y' : 'ies'} (${validationResult.dedupedEntries} unique in file).`
+      ? validationResult.newEntries > 0
+        ? `Detected ${validationResult.newEntries} new unique entr${validationResult.newEntries === 1 ? 'y' : 'ies'} (${validationResult.alreadyIndexedEntries} already indexed).`
+        : `Detected 0 new unique entries (${validationResult.dedupedEntries} unique in file, all already indexed).`
       : null;
 
   return (
@@ -215,7 +221,12 @@ export function LandingPage({
             className="sr-only"
             onChange={(event) => void handleSelectedFile(event.target.files?.item(0) ?? null)}
           />
-          {detectionMessage ? (
+          {selectedTakeoutFile && isValidatingTakeout ? (
+            <p className="status-line takeout-detected-note takeout-validating-note">
+              <span className="inline-spinner" aria-hidden="true" />
+              Detecting new unique entries...
+            </p>
+          ) : detectionMessage ? (
             <p
               className={`status-line takeout-detected-note${validationResult?.newEntries === 0 ? ' is-error' : ''}`}
             >

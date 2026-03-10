@@ -192,6 +192,21 @@ body {
   margin-top: -0.25rem;
 }
 
+.takeout-validating-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.inline-spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 24%, #ffffff 76%);
+  border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+}
+
 .takeout-detected-note.is-error {
   color: #b91c1c;
 }

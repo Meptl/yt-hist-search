@@ -87,6 +87,7 @@ class ValidateTakeoutResponse(BaseModel):
     parsed_entries: int
     deduped_entries: int
     new_entries: int
+    already_indexed_entries: int
 
 
 class ValidateYouTubeApiKeyRequest(BaseModel):
@@ -907,10 +908,12 @@ async def validate_takeout_api_endpoint(
         new_entries = sum(
             1 for entry in deduped_entries if entry.video_id not in existing_video_ids
         )
+        already_indexed_entries = len(deduped_entries) - new_entries
         return ValidateTakeoutResponse(
             parsed_entries=len(entries),
             deduped_entries=len(deduped_entries),
             new_entries=new_entries,
+            already_indexed_entries=already_indexed_entries,
         )
     except (ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(
