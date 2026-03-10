@@ -50,6 +50,7 @@ class SearchHit:
     video_url: str | None
     title: str | None
     channel_name: str | None
+    channel_logo_url: str | None
 
 
 @dataclass(frozen=True)
@@ -294,6 +295,11 @@ def search(
                 title=str(metadata["title"]) if metadata.get("title") else None,
                 channel_name=(
                     str(metadata["channel_name"]) if metadata.get("channel_name") else None
+                ),
+                channel_logo_url=(
+                    str(metadata["channel_logo_url"])
+                    if metadata.get("channel_logo_url")
+                    else None
                 ),
             )
         )

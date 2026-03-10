@@ -218,6 +218,9 @@ def to_llama_documents(
             video_metadata.published_at if video_metadata is not None else None
         )
         view_count = video_metadata.view_count if video_metadata is not None else None
+        channel_logo_url = (
+            video_metadata.channel_logo_url if video_metadata is not None else None
+        )
         docs.append(
             Document(
                 text=text,
@@ -235,6 +238,7 @@ def to_llama_documents(
                     "watched_at_iso": entry.watched_at_iso,
                     "published_at": published_at,
                     "view_count": view_count,
+                    "channel_logo_url": channel_logo_url,
                 },
             )
         )
