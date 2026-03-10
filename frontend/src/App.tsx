@@ -95,6 +95,7 @@ export function App() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<ImportErrorDetails | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('search');
+  const [landingOpenedFromSearch, setLandingOpenedFromSearch] = useState(false);
   const [activeImportJobId, setActiveImportJobId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState(0);
   const [importMessages, setImportMessages] = useState<string[]>([]);
@@ -383,6 +384,7 @@ export function App() {
   }
 
   if (!indexReady || viewMode === 'landing') {
+    const canReturnToSearch = indexReady && viewMode === 'landing' && landingOpenedFromSearch;
     return (
       <LandingPage
         importing={importing}
@@ -400,6 +402,11 @@ export function App() {
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
         onImportTakeoutFile={onImportTakeoutFile}
         onValidateTakeoutFile={onValidateTakeoutFile}
+        allowBackToSearch={canReturnToSearch}
+        onBackToSearch={() => {
+          setLandingOpenedFromSearch(false);
+          setViewMode('search');
+        }}
       />
     );
   }
@@ -428,7 +435,10 @@ export function App() {
   return (
     <SearchPage
       onOpenSettings={() => setViewMode('settings')}
-      onOpenLanding={() => setViewMode('landing')}
+      onOpenLanding={() => {
+        setLandingOpenedFromSearch(true);
+        setViewMode('landing');
+      }}
     />
   );
 }

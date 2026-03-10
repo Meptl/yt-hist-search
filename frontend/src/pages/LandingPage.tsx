@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 
 import { LlmBackendField } from '../components/LlmBackendField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
@@ -27,6 +27,8 @@ type LandingPageProps = {
   onSetYoutubeDataApiKey: (next: string) => void;
   onImportTakeoutFile: (file: File) => Promise<boolean>;
   onValidateTakeoutFile: (file: File) => Promise<number | null>;
+  allowBackToSearch: boolean;
+  onBackToSearch: () => void;
 };
 
 export function LandingPage({
@@ -44,13 +46,32 @@ export function LandingPage({
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
   onImportTakeoutFile,
-  onValidateTakeoutFile
+  onValidateTakeoutFile,
+  allowBackToSearch,
+  onBackToSearch
 }: LandingPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const validationRequestIdRef = useRef(0);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedTakeoutFile, setSelectedTakeoutFile] = useState<File | null>(null);
   const [detectedEntries, setDetectedEntries] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!allowBackToSearch) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onBackToSearch();
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [allowBackToSearch, onBackToSearch]);
 
   function handleDropZoneClick() {
     if (importing) {
@@ -120,8 +141,23 @@ export function LandingPage({
   return (
     <div className="page">
       <main className="app-shell">
+        <header className="hero">
+          <div className="hero-top">
+            <h1>Import your Google Takeout history</h1>
+            {allowBackToSearch ? (
+              <button
+                type="button"
+                className="icon-button settings-close-button"
+                aria-label="Close import page"
+                title="Close import page"
+                onClick={onBackToSearch}
+              >
+                X
+              </button>
+            ) : null}
+          </div>
+        </header>
         <section className="landing-panel">
-          <h1>Import your Google Takeout history</h1>
           <section className="takeout-instructions" aria-label="Google Takeout instructions">
             <h2>Get your file from Google Takeout</h2>
             <ol>
