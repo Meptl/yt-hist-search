@@ -10,6 +10,7 @@ import traceback
 import io
 import re
 import uuid
+import math
 from contextlib import redirect_stderr
 from pathlib import Path
 from threading import Lock, Thread
@@ -242,19 +243,54 @@ class _ProgressStream(io.TextIOBase):
             self._buffer = ""
 
 
-def _progress_from_message(message: str) -> float | None:
-    normalized = message.strip()
-    if "Applying transformations:" in normalized:
-        return 55.0
-    if "Generating embeddings:" in normalized:
+class _EmbeddingProgressTracker:
+    def __init__(self, expected_items: int | None = None) -> None:
+        self._expected_items = expected_items if expected_items and expected_items > 0 else None
+        self._completed_items = 0
+        self._last_done = 0
+        self._last_total = 0
+        self._seen_embedding_progress = False
+
+    def expected_batches(self) -> int | None:
+        if self._expected_items is None or self._last_total <= 0:
+            return None
+        return math.ceil(self._expected_items / self._last_total)
+
+    def progress_from_message(self, message: str) -> float | None:
+        normalized = message.strip()
+        if "Applying transformations:" in normalized:
+            return 55.0
+        if "Generating embeddings:" not in normalized:
+            return None
+
         match = _EMBEDDINGS_PROGRESS_RE.search(normalized)
-        if match:
-            done = int(match.group(1))
-            total = int(match.group(2))
-            if total > 0:
-                return 55.0 + (done / total) * 44.0
-        return 60.0
-    return None
+        if match is None:
+            return 60.0
+
+        done = int(match.group(1))
+        total = int(match.group(2))
+        if total <= 0:
+            return 60.0
+
+        if self._seen_embedding_progress:
+            is_new_batch = done < self._last_done or (done == 0 and total == self._last_total)
+            if is_new_batch:
+                self._completed_items += self._last_total
+
+        self._seen_embedding_progress = True
+        self._last_done = done
+        self._last_total = total
+
+        processed_items = self._completed_items + done
+        if self._expected_items is not None:
+            total_items = self._expected_items
+        else:
+            total_items = max(self._completed_items + total, processed_items)
+        if total_items <= 0:
+            return 60.0
+
+        embedding_fraction = min(processed_items / total_items, 1.0)
+        return 55.0 + (embedding_fraction * 44.0)
 
 
 def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
@@ -385,15 +421,29 @@ def _run_import_job(
                 job_id, f"Prepared {len(docs)} documents. Starting embeddings."
             )
             _IMPORT_JOBS.set_progress(job_id, 55.0)
+            embedding_progress = _EmbeddingProgressTracker(expected_items=len(docs))
+            announced_batches = False
 
             def _on_backend_progress(message: str) -> None:
                 normalized = message.strip()
                 if not normalized:
                     return
                 _IMPORT_JOBS.append_message(job_id, normalized)
-                progress = _progress_from_message(normalized)
+                progress = embedding_progress.progress_from_message(normalized)
                 if progress is not None:
                     _IMPORT_JOBS.set_progress(job_id, progress)
+                nonlocal announced_batches
+                if not announced_batches and "Generating embeddings:" in normalized:
+                    expected_batches = embedding_progress.expected_batches()
+                    if expected_batches is not None:
+                        _IMPORT_JOBS.append_message(
+                            job_id,
+                            (
+                                "Estimated embedding batches: "
+                                f"{expected_batches} (based on {len(docs)} documents)."
+                            ),
+                        )
+                        announced_batches = True
 
             progress_stream = _ProgressStream(_on_backend_progress)
             with redirect_stderr(progress_stream):
