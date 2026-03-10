@@ -684,7 +684,7 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-wrap: balance;
+  text-wrap: pretty;
 }
 
 .video-title:hover,
