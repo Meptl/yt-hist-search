@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -125,6 +125,13 @@ async function createWindow() {
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.cjs')
     }
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url).catch((error) => {
+      process.stderr.write(`[electron] failed to open external url "${url}": ${error.message}\n`);
+    });
+    return { action: 'deny' };
   });
 
   await mainWindow.loadURL(frontendUrl());
