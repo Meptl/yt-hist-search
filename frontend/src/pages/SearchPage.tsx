@@ -214,16 +214,15 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
               </ul>
             </>
           ) : !loading ? (
-            <div className={`empty-state${error ? ' error-state' : ''}`}>
-              {error ? (
+            error ? (
+              <div className="empty-state error-state">
                 <pre>{error}</pre>
-              ) : (
-                <>
-                  {warnings.length > 0 ? <pre>{warnings.join('\n')}</pre> : null}
-                  <p>No results yet. Run a query to search your indexed history.</p>
-                </>
-              )}
-            </div>
+              </div>
+            ) : warnings.length > 0 ? (
+              <div className="empty-state">
+                <pre>{warnings.join('\n')}</pre>
+              </div>
+            ) : null
           ) : null}
         </section>
 

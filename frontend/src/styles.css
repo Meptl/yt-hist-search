@@ -741,10 +741,6 @@ body {
   color: #7f1d1d;
 }
 
-.empty-state p {
-  margin-top: 0;
-}
-
 .empty-state pre {
   margin-bottom: 0;
   border-radius: 8px;
