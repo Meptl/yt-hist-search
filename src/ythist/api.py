@@ -220,6 +220,8 @@ class _ImportJobsState:
 
 
 _EMBEDDINGS_PROGRESS_RE = re.compile(r"(\d+)\s*/\s*(\d+)")
+_EMBEDDING_PHASE_START_PROGRESS = 20.0
+_EMBEDDING_PHASE_SPAN = 80.0
 _IMPORT_JOBS = _ImportJobsState()
 
 
@@ -263,18 +265,18 @@ class _EmbeddingProgressTracker:
     def progress_from_message(self, message: str) -> float | None:
         normalized = message.strip()
         if "Applying transformations:" in normalized:
-            return 55.0
+            return _EMBEDDING_PHASE_START_PROGRESS
         if "Generating embeddings:" not in normalized:
             return None
 
         match = _EMBEDDINGS_PROGRESS_RE.search(normalized)
         if match is None:
-            return 60.0
+            return _EMBEDDING_PHASE_START_PROGRESS + 5.0
 
         done = int(match.group(1))
         total = int(match.group(2))
         if total <= 0:
-            return 60.0
+            return _EMBEDDING_PHASE_START_PROGRESS + 5.0
 
         if self._seen_embedding_progress:
             is_new_batch = done < self._last_done or (done == 0 and total == self._last_total)
@@ -291,10 +293,13 @@ class _EmbeddingProgressTracker:
         else:
             total_items = max(self._completed_items + total, processed_items)
         if total_items <= 0:
-            return 60.0
+            return _EMBEDDING_PHASE_START_PROGRESS + 5.0
 
         embedding_fraction = min(processed_items / total_items, 1.0)
-        return 55.0 + (embedding_fraction * 44.0)
+        return min(
+            _EMBEDDING_PHASE_START_PROGRESS + (embedding_fraction * _EMBEDDING_PHASE_SPAN),
+            99.0,
+        )
 
 
 def _llm_router_cli_warning(llm_router: LLMRouter | None) -> str | None:
@@ -399,7 +404,7 @@ def _run_import_job(
         index_dir.mkdir(parents=True, exist_ok=True)
 
         _IMPORT_JOBS.append_message(job_id, "Parsing watch history")
-        _IMPORT_JOBS.set_progress(job_id, 12.0)
+        _IMPORT_JOBS.set_progress(job_id, 10.0)
         entries = parse_watch_history(takeout_path)
         if not entries:
             raise HTTPException(
@@ -408,11 +413,11 @@ def _run_import_job(
             )
 
         _IMPORT_JOBS.append_message(job_id, f"Parsed {len(entries)} entries")
-        _IMPORT_JOBS.set_progress(job_id, 20.0)
+        _IMPORT_JOBS.set_progress(job_id, 15.0)
         csv_out = data_dir / "youtube_watch_history.csv"
         write_csv(entries, csv_out)
         _IMPORT_JOBS.append_message(job_id, f"Wrote CSV to {csv_out}")
-        _IMPORT_JOBS.set_progress(job_id, 30.0)
+        _IMPORT_JOBS.set_progress(job_id, _EMBEDDING_PHASE_START_PROGRESS)
 
         indexed_entries = 0
         if not skip_index:
@@ -424,7 +429,7 @@ def _run_import_job(
             _IMPORT_JOBS.append_message(
                 job_id, f"Prepared {len(docs)} documents. Starting embeddings."
             )
-            _IMPORT_JOBS.set_progress(job_id, 55.0)
+            _IMPORT_JOBS.set_progress(job_id, _EMBEDDING_PHASE_START_PROGRESS)
             embedding_progress = _EmbeddingProgressTracker(expected_items=len(docs))
             announced_batches = False
 
