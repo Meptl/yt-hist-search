@@ -719,6 +719,16 @@ body {
   overflow: hidden;
 }
 
+.video-channel-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.video-channel-link:hover,
+.video-channel-link:focus-visible {
+  text-decoration: underline;
+}
+
 .empty-state {
   border: 1px dashed var(--edge);
   border-radius: 12px;

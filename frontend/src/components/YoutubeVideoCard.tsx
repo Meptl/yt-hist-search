@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 type SearchResponseItem = {
   title?: string | null;
   channel_name?: string | null;
+  channel_url?: string | null;
   channel_logo_url?: string | null;
   video_id?: string | null;
   video_url?: string | null;
@@ -27,6 +28,7 @@ export function YoutubeVideoCard({
 }: YoutubeVideoCardProps): ReactNode {
   const title = item.title?.trim() || fallbackTitle;
   const channelName = item.channel_name?.trim() || fallbackChannel;
+  const channelUrl = item.channel_url?.trim() || null;
   const channelLogoUrl = item.channel_logo_url?.trim() || null;
   const thumb = thumbnailUrl ? (
     <img
@@ -74,7 +76,18 @@ export function YoutubeVideoCard({
               decoding="async"
             />
           ) : null}
-          <span>{channelName}</span>
+          {channelUrl ? (
+            <a
+              href={channelUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="video-channel-link"
+            >
+              <span>{channelName}</span>
+            </a>
+          ) : (
+            <span>{channelName}</span>
+          )}
         </p>
       </div>
     </li>

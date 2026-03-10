@@ -8,6 +8,7 @@ type SearchResponseItem = {
   text: string;
   title?: string | null;
   channel_name?: string | null;
+  channel_url?: string | null;
   channel_logo_url?: string | null;
   video_id?: string | null;
   video_url?: string | null;
