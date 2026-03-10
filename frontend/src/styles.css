@@ -753,20 +753,14 @@ body {
 
 .bottom-loading-indicator {
   margin: 1.2rem auto 0;
-  width: 44px;
-  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: color-mix(in srgb, #ffffff 80%, var(--bg) 20%);
-  border: 1px solid var(--edge);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .loading-spinner {
-  width: 20px;
-  height: 20px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   border: 2.5px solid color-mix(in srgb, var(--accent) 26%, #ffffff 74%);
   border-top-color: var(--accent);
