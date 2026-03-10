@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 type ImportErrorDetails = {
   message: string;
   stackTrace: string | null;
@@ -21,6 +23,8 @@ export function ImportProgressPage({
   importError,
   onBack
 }: ImportProgressPageProps) {
+  const logRef = useRef<HTMLPreElement | null>(null);
+  const [shouldStickToBottom, setShouldStickToBottom] = useState(true);
   const clampedProgress = Math.max(0, Math.min(100, progress));
   const title =
     status === 'failed'
@@ -28,6 +32,31 @@ export function ImportProgressPage({
       : status === 'completed'
         ? 'Import completed'
         : 'Importing and indexing...';
+
+  useEffect(() => {
+    const logElement = logRef.current;
+    if (!logElement) {
+      return;
+    }
+
+    if (shouldStickToBottom) {
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+  }, [messages, shouldStickToBottom]);
+
+  function handleLogScroll() {
+    const logElement = logRef.current;
+    if (!logElement) {
+      return;
+    }
+
+    const distanceFromBottom =
+      logElement.scrollHeight - logElement.clientHeight - logElement.scrollTop;
+    const nextShouldStickToBottom = distanceFromBottom <= 8;
+    setShouldStickToBottom((currentValue) =>
+      currentValue === nextShouldStickToBottom ? currentValue : nextShouldStickToBottom
+    );
+  }
 
   return (
     <div className="page">
@@ -52,7 +81,12 @@ export function ImportProgressPage({
               ? 'Review backend output below.'
               : 'Live backend output'}
           </p>
-          <pre className="import-progress-log" aria-live="polite">
+          <pre
+            ref={logRef}
+            className="import-progress-log"
+            aria-live="polite"
+            onScroll={handleLogScroll}
+          >
             {messages.length > 0 ? messages.join('\n') : 'Waiting for backend output...'}
           </pre>
           {importError ? (
