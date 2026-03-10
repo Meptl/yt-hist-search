@@ -155,31 +155,54 @@ export function YoutubeVideoCard({
         ) : (
           <p className="video-title">{title}</p>
         )}
-        <p className="video-channel">
+        <div className="video-channel-row">
           {channelLogoUrl ? (
-            <img
-              src={channelLogoUrl}
-              alt=""
-              aria-hidden="true"
-              className="channel-logo"
-              loading="lazy"
-              decoding="async"
-            />
+            channelUrl ? (
+              <a
+                href={channelUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="channel-logo-link"
+                aria-label={`Open channel ${channelName}`}
+              >
+                <img
+                  src={channelLogoUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="channel-logo"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+            ) : (
+              <img
+                src={channelLogoUrl}
+                alt=""
+                aria-hidden="true"
+                className="channel-logo"
+                loading="lazy"
+                decoding="async"
+              />
+            )
           ) : null}
-          {channelUrl ? (
-            <a
-              href={channelUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="video-channel-link"
-            >
-              <span>{channelName}</span>
-            </a>
-          ) : (
-            <span>{channelName}</span>
-          )}
-        </p>
-        {stats ? <p className="video-stats">{stats}</p> : null}
+          <div className="video-channel-info">
+            <p className="video-channel">
+              {channelUrl ? (
+                <a
+                  href={channelUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="video-channel-link"
+                >
+                  <span>{channelName}</span>
+                </a>
+              ) : (
+                <span>{channelName}</span>
+              )}
+            </p>
+            {stats ? <p className="video-stats">{stats}</p> : null}
+          </div>
+        </div>
       </div>
     </li>
   );

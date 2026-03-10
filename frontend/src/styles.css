@@ -705,19 +705,41 @@ body {
   color: #606060;
   font-size: 0.88rem;
   line-height: 1.25;
-  display: flex;
-  align-items: center;
-  gap: 0.38rem;
   overflow: hidden;
 }
 
+.video-channel-row {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+}
+
+.video-channel-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.channel-logo-link {
+  display: inline-flex;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.channel-logo-link:hover,
+.channel-logo-link:focus-visible {
+  opacity: 0.9;
+}
+
 .channel-logo {
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid color-mix(in srgb, #d5dac8 82%, #000 18%);
+  flex: 0 0 auto;
 }
 
 .video-channel span {
