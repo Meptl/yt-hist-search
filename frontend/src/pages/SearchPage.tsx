@@ -28,6 +28,7 @@ type ErrorPayload = {
 
 type SearchPageProps = {
   onOpenSettings: () => void;
+  onOpenLanding: () => void;
 };
 
 function extractVideoUrl(text: string): string | null {
@@ -59,7 +60,7 @@ function extractFieldValue(text: string, label: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
-export function SearchPage({ onOpenSettings }: SearchPageProps) {
+export function SearchPage({ onOpenSettings, onOpenLanding }: SearchPageProps) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +150,7 @@ export function SearchPage({ onOpenSettings }: SearchPageProps) {
                 className="icon-button"
                 aria-label="Update index from file"
                 title="Update index from file"
+                onClick={onOpenLanding}
               >
                 <Plus aria-hidden="true" focusable="false" />
               </button>

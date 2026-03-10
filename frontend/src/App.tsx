@@ -49,7 +49,7 @@ type ImportTakeoutJobStatusResponse = {
   error: ImportApiErrorDetail | null;
 };
 
-type ViewMode = 'search' | 'settings' | 'importProgress';
+type ViewMode = 'search' | 'settings' | 'importProgress' | 'landing';
 
 function parseImportError(
   payload: unknown,
@@ -382,7 +382,7 @@ export function App() {
     );
   }
 
-  if (!indexReady) {
+  if (!indexReady || viewMode === 'landing') {
     return (
       <LandingPage
         importing={importing}
@@ -428,6 +428,7 @@ export function App() {
   return (
     <SearchPage
       onOpenSettings={() => setViewMode('settings')}
+      onOpenLanding={() => setViewMode('landing')}
     />
   );
 }
