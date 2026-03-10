@@ -9,6 +9,7 @@ import uvicorn
 from ythist.indexing import (
     DEFAULT_INDEX_DIR,
     DEFAULT_SCORE_THRESHOLD,
+    get_indexed_video_ids,
     ingest_documents,
     search,
 )
@@ -112,9 +113,11 @@ def _cmd_import_takeout(args: argparse.Namespace) -> None:
     if args.skip_index:
         return
 
+    existing_video_ids = get_indexed_video_ids(Path(args.index_dir))
     docs = to_llama_documents(
         entries,
         youtube_data_api_key=args.youtube_data_api_key,
+        exclude_video_ids=existing_video_ids,
     )
     try:
         indexed = ingest_documents(docs, index_dir=Path(args.index_dir))

@@ -24,12 +24,14 @@ from typing import Literal
 from ythist.indexing import (
     DEFAULT_INDEX_DIR,
     DEFAULT_SCORE_THRESHOLD,
+    get_indexed_video_ids,
     index_ready,
     ingest_documents,
     search,
     warmup,
 )
 from ythist.takeout import (
+    dedupe_entries_by_video_id,
     parse_watch_history,
     to_llama_documents,
     write_csv,
@@ -83,6 +85,8 @@ class ImportTakeoutResponse(BaseModel):
 
 class ValidateTakeoutResponse(BaseModel):
     parsed_entries: int
+    deduped_entries: int
+    new_entries: int
 
 
 class ValidateYouTubeApiKeyRequest(BaseModel):
@@ -370,9 +374,11 @@ def _run_import_from_takeout_path(
 
     indexed_entries = 0
     if not skip_index:
+        existing_video_ids = get_indexed_video_ids(index_dir)
         docs = to_llama_documents(
             entries,
             youtube_data_api_key=youtube_data_api_key,
+            exclude_video_ids=existing_video_ids,
         )
         try:
             indexed_entries = ingest_documents(docs, index_dir=index_dir)
@@ -438,44 +444,62 @@ def _run_import_job(
         indexed_entries = 0
         if not skip_index:
             _IMPORT_JOBS.append_message(job_id, "Preparing documents for indexing")
+            existing_video_ids = get_indexed_video_ids(index_dir)
             docs = to_llama_documents(
                 entries,
                 youtube_data_api_key=youtube_data_api_key,
+                exclude_video_ids=existing_video_ids,
             )
-            _IMPORT_JOBS.append_message(
-                job_id, f"Prepared {len(docs)} documents. Starting embeddings."
-            )
-            _IMPORT_JOBS.set_progress(job_id, _EMBEDDING_PHASE_START_PROGRESS)
-            embedding_progress = _EmbeddingProgressTracker(expected_items=len(docs))
-            announced_batches = False
+            skipped_count = max(len({entry.video_id for entry in entries}) - len(docs), 0)
+            if skipped_count > 0:
+                _IMPORT_JOBS.append_message(
+                    job_id,
+                    (
+                        "Skipping already indexed videos by video_id: "
+                        f"{skipped_count}"
+                    ),
+                )
+            if not docs:
+                _IMPORT_JOBS.append_message(
+                    job_id, "No new videos to index. Existing embeddings are up to date."
+                )
+                indexed_entries = 0
+                _IMPORT_JOBS.set_progress(job_id, 99.0)
+            else:
+                _IMPORT_JOBS.append_message(
+                    job_id, f"Prepared {len(docs)} documents. Starting embeddings."
+                )
+                _IMPORT_JOBS.set_progress(job_id, _EMBEDDING_PHASE_START_PROGRESS)
+                embedding_progress = _EmbeddingProgressTracker(expected_items=len(docs))
+                announced_batches = False
 
-            def _on_backend_progress(message: str) -> None:
-                normalized = message.strip()
-                if not normalized:
-                    return
-                _IMPORT_JOBS.append_message(job_id, normalized)
-                progress = embedding_progress.progress_from_message(normalized)
-                if progress is not None:
-                    _IMPORT_JOBS.set_progress(job_id, progress)
-                nonlocal announced_batches
-                if not announced_batches and "Generating embeddings:" in normalized:
-                    expected_batches = embedding_progress.expected_batches()
-                    if expected_batches is not None:
-                        _IMPORT_JOBS.append_message(
-                            job_id,
-                            (
-                                "Estimated embedding batches: "
-                                f"{expected_batches} (based on {len(docs)} documents)."
-                            ),
-                        )
-                        announced_batches = True
+                def _on_backend_progress(message: str) -> None:
+                    normalized = message.strip()
+                    if not normalized:
+                        return
+                    _IMPORT_JOBS.append_message(job_id, normalized)
+                    progress = embedding_progress.progress_from_message(normalized)
+                    if progress is not None:
+                        _IMPORT_JOBS.set_progress(job_id, progress)
+                    nonlocal announced_batches
+                    if not announced_batches and "Generating embeddings:" in normalized:
+                        expected_batches = embedding_progress.expected_batches()
+                        if expected_batches is not None:
+                            _IMPORT_JOBS.append_message(
+                                job_id,
+                                (
+                                    "Estimated embedding batches: "
+                                    f"{expected_batches} (based on {len(docs)} documents)."
+                                ),
+                            )
+                            announced_batches = True
 
-            progress_stream = _ProgressStream(_on_backend_progress)
-            with redirect_stderr(progress_stream):
-                indexed_entries = ingest_documents(docs, index_dir=index_dir)
-            progress_stream.flush()
-            _IMPORT_JOBS.append_message(job_id, "Indexing completed")
-            _IMPORT_JOBS.set_progress(job_id, 99.0)
+                progress_stream = _ProgressStream(_on_backend_progress)
+                with redirect_stderr(progress_stream):
+                    indexed_entries = ingest_documents(docs, index_dir=index_dir)
+                progress_stream.flush()
+                _IMPORT_JOBS.append_message(job_id, "Indexing completed")
+                _IMPORT_JOBS.set_progress(job_id, 99.0)
 
         result = ImportTakeoutResponse(
             parsed_entries=len(entries),
@@ -858,6 +882,7 @@ def import_takeout_job_status_api_endpoint(job_id: str) -> ImportTakeoutJobStatu
 @app.post("/api/validate-takeout", response_model=ValidateTakeoutResponse)
 async def validate_takeout_api_endpoint(
     file: UploadFile = File(...),
+    index_dir: str = Form(str(DEFAULT_INDEX_DIR)),
 ) -> ValidateTakeoutResponse:
     file_name = Path(file.filename or "watch-history.html").name
     file_suffix = Path(file_name).suffix.lower()
@@ -877,7 +902,16 @@ async def validate_takeout_api_endpoint(
 
     try:
         entries = parse_watch_history(temp_file_path)
-        return ValidateTakeoutResponse(parsed_entries=len(entries))
+        deduped_entries = dedupe_entries_by_video_id(entries)
+        existing_video_ids = get_indexed_video_ids(Path(index_dir))
+        new_entries = sum(
+            1 for entry in deduped_entries if entry.video_id not in existing_video_ids
+        )
+        return ValidateTakeoutResponse(
+            parsed_entries=len(entries),
+            deduped_entries=len(deduped_entries),
+            new_entries=new_entries,
+        )
     except (ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(
             status_code=400,

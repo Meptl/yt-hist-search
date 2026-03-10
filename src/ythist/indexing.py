@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -30,6 +31,7 @@ _EMBED_MODELS: dict[str, FastEmbedEmbedding] = {}
 _INDEXES: dict[tuple[str, str], VectorStoreIndex] = {}
 _INDEX_LOAD_EVENTS: dict[tuple[str, str], Event] = {}
 _INDEX_LOAD_ERRORS: dict[tuple[str, str], Exception] = {}
+_INDEX_WRITE_LOCK = Lock()
 _INDEX_MARKER_FILES = (
     "docstore.json",
     "index_store.json",
@@ -223,6 +225,59 @@ def _invalidate_cached_index(index_dir: Path) -> None:
             _INDEX_LOAD_ERRORS.pop(key, None)
 
 
+def _extract_video_id_from_document(document: Document) -> str | None:
+    metadata = document.metadata or {}
+    raw_video_id = metadata.get("video_id")
+    if not isinstance(raw_video_id, str):
+        return None
+    normalized = raw_video_id.strip()
+    return normalized or None
+
+
+def _collect_video_ids_from_json_value(
+    value: object,
+    *,
+    output: set[str],
+) -> None:
+    if isinstance(value, dict):
+        video_id = value.get("video_id")
+        if isinstance(video_id, str):
+            normalized = video_id.strip()
+            if normalized:
+                output.add(normalized)
+        for nested in value.values():
+            _collect_video_ids_from_json_value(nested, output=output)
+        return
+    if isinstance(value, list):
+        for nested in value:
+            _collect_video_ids_from_json_value(nested, output=output)
+
+
+def _load_video_ids_from_docstore(index_dir: Path) -> set[str]:
+    docstore_path = index_dir / "docstore.json"
+    if not docstore_path.exists():
+        return set()
+    try:
+        payload = json.loads(docstore_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+
+    result: set[str] = set()
+    _collect_video_ids_from_json_value(payload, output=result)
+    return result
+
+
+def _resolve_indexed_video_ids(index_dir: Path) -> set[str]:
+    return _load_video_ids_from_docstore(index_dir)
+
+
+def get_indexed_video_ids(index_dir: Path = DEFAULT_INDEX_DIR) -> set[str]:
+    if not index_dir.exists() or not index_dir.is_dir():
+        return set()
+    with _INDEX_WRITE_LOCK:
+        return _resolve_indexed_video_ids(index_dir)
+
+
 def index_ready(index_dir: Path = DEFAULT_INDEX_DIR) -> bool:
     if not index_dir.exists() or not index_dir.is_dir():
         return False
@@ -240,14 +295,36 @@ def ingest_documents(
 ) -> int:
     docs = list(documents)
     if not docs:
-        raise ValueError("No documents were provided for indexing.")
+        return 0
 
     _set_embedding_model(model_name)
-    index = VectorStoreIndex.from_documents(docs, show_progress=True)
     index_dir.mkdir(parents=True, exist_ok=True)
-    index.storage_context.persist(persist_dir=str(index_dir))
-    _invalidate_cached_index(index_dir)
-    return len(docs)
+    with _INDEX_WRITE_LOCK:
+        indexed_video_ids = _resolve_indexed_video_ids(index_dir)
+        docs_to_index: list[Document] = []
+        for doc in docs:
+            video_id = _extract_video_id_from_document(doc)
+            if video_id is not None and video_id in indexed_video_ids:
+                continue
+            docs_to_index.append(doc)
+
+        if not docs_to_index:
+            return 0
+
+        if index_ready(index_dir):
+            index = _load_index(index_dir)
+            for doc in docs_to_index:
+                index.insert(doc)
+        else:
+            index = VectorStoreIndex.from_documents(docs_to_index, show_progress=True)
+
+        index.storage_context.persist(persist_dir=str(index_dir))
+        for doc in docs_to_index:
+            video_id = _extract_video_id_from_document(doc)
+            if video_id is not None:
+                indexed_video_ids.add(video_id)
+        _invalidate_cached_index(index_dir)
+        return len(docs_to_index)
 
 
 def search(

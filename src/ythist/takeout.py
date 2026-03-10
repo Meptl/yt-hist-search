@@ -181,18 +181,23 @@ def to_llama_documents(
     entries: list[WatchEntry],
     *,
     youtube_data_api_key: str | None = None,
+    exclude_video_ids: set[str] | None = None,
 ) -> list[Document]:
     deduped_entries = dedupe_entries_by_video_id(entries)
+    excluded_ids = exclude_video_ids or set()
+    candidate_entries = [
+        entry for entry in deduped_entries if entry.video_id not in excluded_ids
+    ]
     metadata_by_video_id = (
         fetch_video_metadata_map(
             api_key=youtube_data_api_key,
-            video_ids=[entry.video_id for entry in deduped_entries],
+            video_ids=[entry.video_id for entry in candidate_entries],
         )
-        if youtube_data_api_key
+        if youtube_data_api_key and candidate_entries
         else {}
     )
     docs: list[Document] = []
-    for entry in deduped_entries:
+    for entry in candidate_entries:
         video_metadata = metadata_by_video_id.get(entry.video_id)
         tags = list(video_metadata.tags) if video_metadata is not None else []
         topic_categories = (

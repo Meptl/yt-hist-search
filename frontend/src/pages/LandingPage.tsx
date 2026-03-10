@@ -11,6 +11,12 @@ type ImportErrorDetails = {
   statusCode: number | null;
 };
 
+type TakeoutValidationResult = {
+  parsedEntries: number;
+  dedupedEntries: number;
+  newEntries: number;
+};
+
 type LandingPageProps = {
   importing: boolean;
   llmBackend: LLMBackendSelection;
@@ -26,7 +32,7 @@ type LandingPageProps = {
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
   onImportTakeoutFile: (file: File) => Promise<boolean>;
-  onValidateTakeoutFile: (file: File) => Promise<number | null>;
+  onValidateTakeoutFile: (file: File) => Promise<TakeoutValidationResult | null>;
   allowBackToSearch: boolean;
   onBackToSearch: () => void;
 };
@@ -54,7 +60,7 @@ export function LandingPage({
   const validationRequestIdRef = useRef(0);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedTakeoutFile, setSelectedTakeoutFile] = useState<File | null>(null);
-  const [detectedEntries, setDetectedEntries] = useState<number | null>(null);
+  const [validationResult, setValidationResult] = useState<TakeoutValidationResult | null>(null);
 
   useEffect(() => {
     if (!allowBackToSearch) {
@@ -89,23 +95,23 @@ export function LandingPage({
     validationRequestIdRef.current = requestId;
 
     setSelectedTakeoutFile(file);
-    setDetectedEntries(null);
+    setValidationResult(null);
 
-    const parsedEntries = await onValidateTakeoutFile(file);
+    const nextResult = await onValidateTakeoutFile(file);
     if (validationRequestIdRef.current !== requestId) {
       return;
     }
-    setDetectedEntries(parsedEntries);
+    setValidationResult(nextResult);
   }
 
   async function triggerImport() {
-    if (!selectedTakeoutFile || importing || !detectedEntries || detectedEntries <= 0) {
+    if (!selectedTakeoutFile || importing || !validationResult || validationResult.newEntries <= 0) {
       return;
     }
     const importSucceeded = await onImportTakeoutFile(selectedTakeoutFile);
     if (importSucceeded) {
       setSelectedTakeoutFile(null);
-      setDetectedEntries(null);
+      setValidationResult(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -131,11 +137,12 @@ export function LandingPage({
     void handleSelectedFile(file);
   }
 
-  const canImport = !!selectedTakeoutFile && detectedEntries !== null && detectedEntries > 0;
+  const canImport =
+    !!selectedTakeoutFile && validationResult !== null && validationResult.newEntries > 0;
 
   const detectionMessage =
-    selectedTakeoutFile && detectedEntries !== null
-      ? `Detected ${detectedEntries} entr${detectedEntries === 1 ? 'y' : 'ies'}.`
+    selectedTakeoutFile && validationResult !== null
+      ? `Detected ${validationResult.newEntries} new entr${validationResult.newEntries === 1 ? 'y' : 'ies'} (${validationResult.dedupedEntries} unique in file).`
       : null;
 
   return (
@@ -210,7 +217,7 @@ export function LandingPage({
           />
           {detectionMessage ? (
             <p
-              className={`status-line takeout-detected-note${detectedEntries === 0 ? ' is-error' : ''}`}
+              className={`status-line takeout-detected-note${validationResult?.newEntries === 0 ? ' is-error' : ''}`}
             >
               {detectionMessage}
             </p>

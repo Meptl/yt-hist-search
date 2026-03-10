@@ -24,6 +24,14 @@ type IndexStatusResponse = {
 
 type ValidateTakeoutResponse = {
   parsed_entries: number;
+  deduped_entries: number;
+  new_entries: number;
+};
+
+type TakeoutValidationResult = {
+  parsedEntries: number;
+  dedupedEntries: number;
+  newEntries: number;
 };
 
 type ImportTakeoutResponse = {
@@ -312,7 +320,9 @@ export function App() {
     }
   }
 
-  async function onValidateTakeoutFile(file: File): Promise<number | null> {
+  async function onValidateTakeoutFile(
+    file: File
+  ): Promise<TakeoutValidationResult | null> {
     setImportError(null);
     try {
       const formData = new FormData();
@@ -329,7 +339,12 @@ export function App() {
         return null;
       }
 
-      return (payload as ValidateTakeoutResponse).parsed_entries;
+      const parsed = payload as ValidateTakeoutResponse;
+      return {
+        parsedEntries: parsed.parsed_entries,
+        dedupedEntries: parsed.deduped_entries,
+        newEntries: parsed.new_entries
+      };
     } catch (err) {
       console.error('Validate takeout failed', err);
       if (err instanceof Error && err.message.trim().length > 0) {
