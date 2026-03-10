@@ -120,6 +120,13 @@ export function YoutubeVideoCard({
   const viewCountLabel = formatViewCount(item.view_count);
   const publishedTimeLabel = formatRelativePublishedTime(item.published_at);
   const stats = [viewCountLabel, publishedTimeLabel].filter(Boolean).join(' • ');
+  const titleNode = videoUrl ? (
+    <a href={videoUrl} target="_blank" rel="noreferrer" className="video-title">
+      {title}
+    </a>
+  ) : (
+    <p className="video-title">{title}</p>
+  );
   const thumb = thumbnailUrl ? (
     <img
       src={thumbnailUrl}
@@ -148,13 +155,6 @@ export function YoutubeVideoCard({
         <div className="thumb-link">{thumb}</div>
       )}
       <div className="card-body">
-        {videoUrl ? (
-          <a href={videoUrl} target="_blank" rel="noreferrer" className="video-title">
-            {title}
-          </a>
-        ) : (
-          <p className="video-title">{title}</p>
-        )}
         <div className="video-channel-row">
           {channelLogoUrl ? (
             channelUrl ? (
@@ -186,6 +186,7 @@ export function YoutubeVideoCard({
             )
           ) : null}
           <div className="video-channel-info">
+            {titleNode}
             <p className="video-channel">
               {channelUrl ? (
                 <a

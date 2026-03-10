@@ -711,7 +711,7 @@ body {
 
 .video-channel-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.62rem;
 }
 
