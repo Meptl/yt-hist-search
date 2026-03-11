@@ -46,6 +46,7 @@ function writeBuilderConfig() {
           'frontend/dist/**',
           'src/**',
           'pyproject.toml',
+          'README.md',
           'uv.lock',
           'package.json',
           '!**/__pycache__/**',
