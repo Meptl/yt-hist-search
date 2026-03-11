@@ -37,24 +37,25 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
+      - name: Enable pnpm via Corepack
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
 
       - name: Get pnpm store path
         shell: bash
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Cache pnpm store
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml', 'frontend/pnpm-lock.yaml') }}
@@ -62,7 +63,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Cache electron-builder downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/electron
@@ -84,7 +85,7 @@ jobs:
           SKIP_FRONTEND_BUILD: '1'
 
       - name: Upload Electron artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: electron-${{ matrix.name }}
           path: |
@@ -103,10 +104,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download Electron artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: electron-*
           path: release-assets
@@ -118,12 +119,11 @@ jobs:
         run: gh release delete main --cleanup-tag -y || true
 
       - name: Create rolling release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: main
-          name: Rolling Release (main)
-          prerelease: true
-          generate_release_notes: true
-          target_commitish: ${{ github.sha }}
-          files: |
-            release-assets/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          gh release create main release-assets/*
+          --title "Rolling Release (main)"
+          --prerelease
+          --generate-notes
+          --target "${{ github.sha }}"
