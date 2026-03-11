@@ -249,6 +249,7 @@ class _ImportJobsState:
 
 
 _EMBEDDINGS_PROGRESS_RE = re.compile(r"(\d+)\s*/\s*(\d+)")
+_PRE_INDEXING_PHASE_END_PROGRESS = 8.0
 _EMBEDDING_PHASE_START_PROGRESS = 20.0
 _EMBEDDING_PHASE_SPAN = 80.0
 _IMPORT_JOBS = _ImportJobsState()
@@ -490,7 +491,7 @@ def _run_import_job(
     backend_driver: BackendDriver,
 ) -> None:
     _IMPORT_JOBS.append_message(job_id, "Import started")
-    _IMPORT_JOBS.set_progress(job_id, 5.0)
+    _IMPORT_JOBS.set_progress(job_id, 2.0)
     try:
         if not takeout_path.exists() or not takeout_path.is_file():
             raise HTTPException(status_code=400, detail=f"File not found: {takeout_path}")
@@ -507,7 +508,7 @@ def _run_import_job(
         index_dir.mkdir(parents=True, exist_ok=True)
 
         _IMPORT_JOBS.append_message(job_id, "Parsing watch history")
-        _IMPORT_JOBS.set_progress(job_id, 10.0)
+        _IMPORT_JOBS.set_progress(job_id, 4.0)
         entries = parse_watch_history(takeout_path)
         if not entries:
             raise HTTPException(
@@ -516,11 +517,11 @@ def _run_import_job(
             )
 
         _IMPORT_JOBS.append_message(job_id, f"Parsed {len(entries)} entries")
-        _IMPORT_JOBS.set_progress(job_id, 15.0)
+        _IMPORT_JOBS.set_progress(job_id, 6.0)
         csv_out = data_dir / "youtube_watch_history.csv"
         write_csv(entries, csv_out)
         _IMPORT_JOBS.append_message(job_id, f"Wrote CSV to {csv_out}")
-        _IMPORT_JOBS.set_progress(job_id, _EMBEDDING_PHASE_START_PROGRESS)
+        _IMPORT_JOBS.set_progress(job_id, _PRE_INDEXING_PHASE_END_PROGRESS)
 
         indexed_entries = 0
         if not skip_index:
