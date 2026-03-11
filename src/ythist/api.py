@@ -37,13 +37,13 @@ from ythist.takeout import (
     to_llama_documents,
     write_csv,
 )
-from ythist.youtube_metadata import validate_youtube_api_key
+from ythist.youtube_metadata import validate_youtube_string
 from ythist.settings import (
     BACKEND_DRIVER_OPTIONS,
     BackendDriver,
     LLM_ROUTER_OPTIONS,
     load_settings,
-    resolve_youtube_data_api_key,
+    resolve_youtube_data_string,
     save_settings,
 )
 from ythist.llm_router import LLMRouterError, rewrite_prompt_with_router
@@ -93,11 +93,11 @@ class ValidateTakeoutResponse(BaseModel):
     already_indexed_entries: int
 
 
-class ValidateYouTubeApiKeyRequest(BaseModel):
-    youtube_data_api_key: str | None = None
+class ValidateYouTubeStringRequest(BaseModel):
+    youtube_data_string: str | None = None
 
 
-class ValidateYouTubeApiKeyResponse(BaseModel):
+class ValidateYouTubeStringResponse(BaseModel):
     valid: bool
     message: str
 
@@ -154,7 +154,7 @@ class SettingsResponse(BaseModel):
     backend_driver_options: list[dict[str, str | bool | None]]
     backend_driver_detection_error: str | None = None
     backend_driver_available_providers: list[str]
-    youtube_data_api_key: str | None = None
+    youtube_data_string: str | None = None
     score_threshold: float = DEFAULT_SCORE_THRESHOLD
     llm_router_cli_warning: str | None = None
 
@@ -163,7 +163,7 @@ class UpdateSettingsRequest(BaseModel):
     llm_router: LLMRouter | None = None
     llm_backend: LLMRouter | None = None
     backend_driver: BackendDriver | None = None
-    youtube_data_api_key: str | None = None
+    youtube_data_string: str | None = None
     score_threshold: float | None = None
 
 
@@ -369,9 +369,9 @@ def _build_settings_response(settings: dict[str, object]) -> SettingsResponse:
         backend_driver_available_providers=[
             str(provider) for provider in capabilities["available_providers"]
         ],
-        youtube_data_api_key=(
-            str(settings["youtube_data_api_key"])
-            if settings.get("youtube_data_api_key") is not None
+        youtube_data_string=(
+            str(settings["youtube_data_string"])
+            if settings.get("youtube_data_string") is not None
             else None
         ),
         score_threshold=float(settings.get("score_threshold", DEFAULT_SCORE_THRESHOLD)),
@@ -381,19 +381,19 @@ def _build_settings_response(settings: dict[str, object]) -> SettingsResponse:
     )
 
 
-def _validate_import_api_key_or_raise(
+def _validate_import_youtube_string_or_raise(
     *,
-    youtube_data_api_key: str | None,
+    youtube_data_string: str | None,
 ) -> None:
-    if not isinstance(youtube_data_api_key, str):
+    if not isinstance(youtube_data_string, str):
         return
 
-    normalized_api_key = youtube_data_api_key.strip()
-    if not normalized_api_key:
+    normalized_youtube_string = youtube_data_string.strip()
+    if not normalized_youtube_string:
         return
 
     try:
-        validate_youtube_api_key(normalized_api_key)
+        validate_youtube_string(normalized_youtube_string)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=400,
@@ -412,7 +412,7 @@ def _run_import_from_takeout_path(
     index_dir: Path,
     data_dir: Path,
     skip_index: bool,
-    youtube_data_api_key: str | None,
+    youtube_data_string: str | None,
     backend_driver: BackendDriver,
 ) -> ImportTakeoutResponse:
     if not takeout_path.exists() or not takeout_path.is_file():
@@ -423,7 +423,7 @@ def _run_import_from_takeout_path(
             detail="Expected a .html/.htm/.json takeout file",
         )
     if not skip_index:
-        _validate_import_api_key_or_raise(youtube_data_api_key=youtube_data_api_key)
+        _validate_import_youtube_string_or_raise(youtube_data_string=youtube_data_string)
 
     data_dir.mkdir(parents=True, exist_ok=True)
     index_dir.mkdir(parents=True, exist_ok=True)
@@ -452,7 +452,7 @@ def _run_import_from_takeout_path(
         existing_video_ids = get_indexed_video_ids(index_dir)
         docs = to_llama_documents(
             entries,
-            youtube_data_api_key=youtube_data_api_key,
+            youtube_data_string=youtube_data_string,
             exclude_video_ids=existing_video_ids,
         )
         try:
@@ -488,7 +488,7 @@ def _run_import_job(
     index_dir: Path,
     data_dir: Path,
     skip_index: bool,
-    youtube_data_api_key: str | None,
+    youtube_data_string: str | None,
     backend_driver: BackendDriver,
 ) -> None:
     _IMPORT_JOBS.append_message(job_id, "Import started")
@@ -503,7 +503,7 @@ def _run_import_job(
             )
         if not skip_index:
             _IMPORT_JOBS.append_message(job_id, "Validating YouTube Data API key")
-            _validate_import_api_key_or_raise(youtube_data_api_key=youtube_data_api_key)
+            _validate_import_youtube_string_or_raise(youtube_data_string=youtube_data_string)
 
         data_dir.mkdir(parents=True, exist_ok=True)
         index_dir.mkdir(parents=True, exist_ok=True)
@@ -530,7 +530,7 @@ def _run_import_job(
             existing_video_ids = get_indexed_video_ids(index_dir)
             docs = to_llama_documents(
                 entries,
-                youtube_data_api_key=youtube_data_api_key,
+                youtube_data_string=youtube_data_string,
                 exclude_video_ids=existing_video_ids,
             )
             skipped_count = max(len({entry.video_id for entry in entries}) - len(docs), 0)
@@ -696,12 +696,12 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
     elif "llm_backend" in updates:
         selected_router = updates["llm_backend"]
 
-    youtube_data_api_key = current_settings["youtube_data_api_key"]
-    if "youtube_data_api_key" in updates:
-        youtube_data_api_key = updates["youtube_data_api_key"]
-        if isinstance(youtube_data_api_key, str) and youtube_data_api_key.strip():
+    youtube_data_string = current_settings["youtube_data_string"]
+    if "youtube_data_string" in updates:
+        youtube_data_string = updates["youtube_data_string"]
+        if isinstance(youtube_data_string, str) and youtube_data_string.strip():
             try:
-                validate_youtube_api_key(youtube_data_api_key)
+                validate_youtube_string(youtube_data_string)
             except RuntimeError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
     score_threshold = current_settings["score_threshold"]
@@ -714,25 +714,25 @@ def update_settings_api_endpoint(payload: UpdateSettingsRequest) -> SettingsResp
     settings = save_settings(
         llm_router=selected_router,
         backend_driver=backend_driver,
-        youtube_data_api_key=youtube_data_api_key,
+        youtube_data_string=youtube_data_string,
         score_threshold=score_threshold,
     )
     return _build_settings_response(settings)
 
 
-@app.post("/api/validate-youtube-api-key", response_model=ValidateYouTubeApiKeyResponse)
-def validate_youtube_api_key_api_endpoint(
-    payload: ValidateYouTubeApiKeyRequest,
-) -> ValidateYouTubeApiKeyResponse:
-    key_candidate = payload.youtube_data_api_key
+@app.post("/api/validate-youtube-string", response_model=ValidateYouTubeStringResponse)
+def validate_youtube_string_api_endpoint(
+    payload: ValidateYouTubeStringRequest,
+) -> ValidateYouTubeStringResponse:
+    key_candidate = payload.youtube_data_string
     if not isinstance(key_candidate, str) or not key_candidate.strip():
-        return ValidateYouTubeApiKeyResponse(
+        return ValidateYouTubeStringResponse(
             valid=True,
             message="",
         )
 
     try:
-        validate_youtube_api_key(key_candidate)
+        validate_youtube_string(key_candidate)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=400,
@@ -742,7 +742,7 @@ def validate_youtube_api_key_api_endpoint(
             ).model_dump(),
         ) from exc
 
-    return ValidateYouTubeApiKeyResponse(
+    return ValidateYouTubeStringResponse(
         valid=True,
         message="YouTube Data API key is valid.",
     )
@@ -897,8 +897,8 @@ async def import_takeout_api_endpoint(
             index_dir=index_path,
             data_dir=data_path,
             skip_index=skip_index,
-            youtube_data_api_key=resolve_youtube_data_api_key(
-                current_settings["youtube_data_api_key"]
+            youtube_data_string=resolve_youtube_data_string(
+                current_settings["youtube_data_string"]
             ),
             backend_driver=_backend_driver_from_settings_value(
                 current_settings.get("backend_driver")
@@ -955,8 +955,8 @@ async def import_takeout_job_create_api_endpoint(
             "index_dir": Path(index_dir),
             "data_dir": Path(data_dir),
             "skip_index": skip_index,
-            "youtube_data_api_key": resolve_youtube_data_api_key(
-                current_settings["youtube_data_api_key"]
+            "youtube_data_string": resolve_youtube_data_string(
+                current_settings["youtube_data_string"]
             ),
             "backend_driver": _backend_driver_from_settings_value(
                 current_settings.get("backend_driver")
@@ -1058,8 +1058,8 @@ def import_takeout_path_api_endpoint(
             index_dir=Path(payload.index_dir),
             data_dir=Path(payload.data_dir),
             skip_index=payload.skip_index,
-            youtube_data_api_key=resolve_youtube_data_api_key(
-                current_settings["youtube_data_api_key"]
+            youtube_data_string=resolve_youtube_data_string(
+                current_settings["youtube_data_string"]
             ),
             backend_driver=_backend_driver_from_settings_value(
                 current_settings.get("backend_driver")

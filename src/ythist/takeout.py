@@ -180,7 +180,7 @@ def parse_watch_history(takeout_path: Path) -> list[WatchEntry]:
 def to_llama_documents(
     entries: list[WatchEntry],
     *,
-    youtube_data_api_key: str | None = None,
+    youtube_data_string: str | None = None,
     exclude_video_ids: set[str] | None = None,
 ) -> list[Document]:
     deduped_entries = dedupe_entries_by_video_id(entries)
@@ -190,10 +190,10 @@ def to_llama_documents(
     ]
     metadata_by_video_id = (
         fetch_video_metadata_map(
-            api_key=youtube_data_api_key,
+            youtube_string=youtube_data_string,
             video_ids=[entry.video_id for entry in candidate_entries],
         )
-        if youtube_data_api_key and candidate_entries
+        if youtube_data_string and candidate_entries
         else {}
     )
     docs: list[Document] = []

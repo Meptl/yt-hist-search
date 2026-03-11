@@ -24,8 +24,8 @@ DEFAULT_PARTS = (
 )
 
 
-def fetch_video_metadata(api_key: str, video_id: str, parts: str) -> dict:
-    query = urlencode({"id": video_id, "part": parts, "key": api_key})
+def fetch_video_metadata(youtube_string: str, video_id: str, parts: str) -> dict:
+    query = urlencode({"id": video_id, "part": parts, "key": youtube_string})
     url = f"{YOUTUBE_API_URL}?{query}"
 
     with urlopen(url, timeout=30) as response:
@@ -55,9 +55,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    api_key = os.getenv("YOUTUBE_STRING")
+    youtube_string = os.getenv("YOUTUBE_STRING")
 
-    if not api_key:
+    if not youtube_string:
         print(
             "Missing YOUTUBE_STRING. Set it and run again, e.g.\n"
             "  YOUTUBE_STRING=your_key python scripts/fetch_youtube_video_metadata.py",
@@ -67,7 +67,7 @@ def main() -> int:
 
     try:
         payload = fetch_video_metadata(
-            api_key=api_key,
+            youtube_string=youtube_string,
             video_id=args.video_id,
             parts=args.parts,
         )

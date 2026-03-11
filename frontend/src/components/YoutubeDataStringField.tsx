@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-type YoutubeDataApiKeyFieldProps = {
+type YoutubeDataStringFieldProps = {
   id: string;
   value: string;
   loading: boolean;
@@ -11,7 +11,7 @@ type YoutubeDataApiKeyFieldProps = {
   compact?: boolean;
 };
 
-export function YoutubeDataApiKeyField({
+export function YoutubeDataStringField({
   id,
   value,
   loading,
@@ -20,7 +20,7 @@ export function YoutubeDataApiKeyField({
   statusTone,
   onChange,
   compact = false
-}: YoutubeDataApiKeyFieldProps) {
+}: YoutubeDataStringFieldProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [draftValue, setDraftValue] = useState(value);
   const draftValueRef = useRef(value);

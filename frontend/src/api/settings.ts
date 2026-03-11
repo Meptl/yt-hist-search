@@ -15,7 +15,7 @@ export type SettingsResponse = {
   backend_driver_options: BackendDriverOption[];
   backend_driver_detection_error: string | null;
   backend_driver_available_providers: string[];
-  youtube_data_api_key: string | null;
+  youtube_data_string: string | null;
   score_threshold: number;
   llm_router_cli_warning: string | null;
 };
@@ -24,11 +24,11 @@ export type UpdateSettingsPayload = {
   llm_router?: LLMBackend | null;
   llm_backend?: LLMBackend | null;
   backend_driver?: BackendDriver;
-  youtube_data_api_key?: string | null;
+  youtube_data_string?: string | null;
   score_threshold?: number;
 };
 
-export type ValidateYouTubeApiKeyResponse = {
+export type ValidateYouTubeStringResponse = {
   valid: boolean;
   message: string;
 };
@@ -81,16 +81,16 @@ export async function updateSettings(payload: UpdateSettingsPayload): Promise<Se
   return responsePayload as SettingsResponse;
 }
 
-export async function validateYouTubeDataApiKey(
-  youtubeDataApiKey: string | null
-): Promise<ValidateYouTubeApiKeyResponse> {
-  const response = await fetch('/api/validate-youtube-api-key', {
+export async function validateYouTubeDataString(
+  youtubeDataString: string | null
+): Promise<ValidateYouTubeStringResponse> {
+  const response = await fetch('/api/validate-youtube-string', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      youtube_data_api_key: youtubeDataApiKey
+      youtube_data_string: youtubeDataString
     })
   });
 
@@ -99,5 +99,5 @@ export async function validateYouTubeDataApiKey(
     throw new Error(readErrorMessage(payload, 'Failed to validate YouTube Data API key'));
   }
 
-  return payload as ValidateYouTubeApiKeyResponse;
+  return payload as ValidateYouTubeStringResponse;
 }

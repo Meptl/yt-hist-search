@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 
 import { LlmBackendField } from '../components/LlmBackendField';
-import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
+import { YoutubeDataStringField } from '../components/YoutubeDataStringField';
 import { type LLMBackend } from '../api/settings';
-import { type LLMBackendSelection, type YouTubeApiKeyStatusTone } from '../hooks/useSettings';
+import { type LLMBackendSelection, type YouTubeStringStatusTone } from '../hooks/useSettings';
 
 type ImportErrorDetails = {
   message: string;
@@ -26,12 +26,12 @@ type LandingPageProps = {
   settingsSaving: boolean;
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
-  youtubeDataApiKey: string;
-  youtubeDataApiKeyStatusMessage: string | null;
-  youtubeDataApiKeyStatusTone: YouTubeApiKeyStatusTone;
+  youtubeDataString: string;
+  youtubeDataStringStatusMessage: string | null;
+  youtubeDataStringStatusTone: YouTubeStringStatusTone;
   importError: ImportErrorDetails | null;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
-  onSetYoutubeDataApiKey: (next: string) => void;
+  onSetYoutubeDataString: (next: string) => void;
   onImportTakeoutFile: (file: File) => Promise<boolean>;
   onValidateTakeoutFile: (file: File) => Promise<TakeoutValidationResult | null>;
   allowBackToSearch: boolean;
@@ -46,12 +46,12 @@ export function LandingPage({
   settingsSaving,
   settingsMessage,
   llmRouterCliWarning,
-  youtubeDataApiKey,
-  youtubeDataApiKeyStatusMessage,
-  youtubeDataApiKeyStatusTone,
+  youtubeDataString,
+  youtubeDataStringStatusMessage,
+  youtubeDataStringStatusTone,
   importError,
   onSetLlmBackend,
-  onSetYoutubeDataApiKey,
+  onSetYoutubeDataString,
   onImportTakeoutFile,
   onValidateTakeoutFile,
   allowBackToSearch,
@@ -146,8 +146,8 @@ export function LandingPage({
     validationResult !== null &&
     validationResult.newEntries > 0 &&
     !(
-      youtubeDataApiKey.trim().length > 0 &&
-      youtubeDataApiKeyStatusTone === 'error'
+      youtubeDataString.trim().length > 0 &&
+      youtubeDataStringStatusTone === 'error'
     );
 
   const detectionMessage =
@@ -253,14 +253,14 @@ export function LandingPage({
             onChange={onSetLlmBackend}
           />
 
-          <YoutubeDataApiKeyField
-            id="landing-youtube-data-api-key"
-            value={youtubeDataApiKey}
+          <YoutubeDataStringField
+            id="landing-youtube-data-string"
+            value={youtubeDataString}
             loading={settingsLoading}
             saving={settingsSaving}
-            statusMessage={youtubeDataApiKeyStatusMessage}
-            statusTone={youtubeDataApiKeyStatusTone}
-            onChange={onSetYoutubeDataApiKey}
+            statusMessage={youtubeDataStringStatusMessage}
+            statusTone={youtubeDataStringStatusTone}
+            onChange={onSetYoutubeDataString}
           />
         </section>
         <div className="landing-import-actions">

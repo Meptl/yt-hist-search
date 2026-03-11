@@ -120,12 +120,12 @@ export function App() {
     settingsSaving,
     settingsMessage,
     llmRouterCliWarning,
-    youtubeDataApiKey,
-    youtubeDataApiKeyStatusMessage,
-    youtubeDataApiKeyStatusTone,
+    youtubeDataString,
+    youtubeDataStringStatusMessage,
+    youtubeDataStringStatusTone,
     scoreThreshold,
     setLlmBackend,
-    setYoutubeDataApiKey,
+    setYoutubeDataString,
     setScoreThreshold
   } = useSettings();
 
@@ -431,12 +431,12 @@ export function App() {
         settingsSaving={settingsSaving}
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
-        youtubeDataApiKey={youtubeDataApiKey}
-        youtubeDataApiKeyStatusMessage={youtubeDataApiKeyStatusMessage}
-        youtubeDataApiKeyStatusTone={youtubeDataApiKeyStatusTone}
+        youtubeDataString={youtubeDataString}
+        youtubeDataStringStatusMessage={youtubeDataStringStatusMessage}
+        youtubeDataStringStatusTone={youtubeDataStringStatusTone}
         importError={importError}
         onSetLlmBackend={setLlmBackend}
-        onSetYoutubeDataApiKey={setYoutubeDataApiKey}
+        onSetYoutubeDataString={setYoutubeDataString}
         onImportTakeoutFile={onImportTakeoutFile}
         onValidateTakeoutFile={onValidateTakeoutFile}
         allowBackToSearch={canReturnToSearch}
@@ -457,12 +457,12 @@ export function App() {
         settingsSaving={settingsSaving}
         settingsMessage={settingsMessage}
         llmRouterCliWarning={llmRouterCliWarning}
-        youtubeDataApiKey={youtubeDataApiKey}
-        youtubeDataApiKeyStatusMessage={youtubeDataApiKeyStatusMessage}
-        youtubeDataApiKeyStatusTone={youtubeDataApiKeyStatusTone}
+        youtubeDataString={youtubeDataString}
+        youtubeDataStringStatusMessage={youtubeDataStringStatusMessage}
+        youtubeDataStringStatusTone={youtubeDataStringStatusTone}
         scoreThreshold={scoreThreshold}
         onSetLlmBackend={setLlmBackend}
-        onSetYoutubeDataApiKey={setYoutubeDataApiKey}
+        onSetYoutubeDataString={setYoutubeDataString}
         onSetScoreThreshold={setScoreThreshold}
         onBack={() => setViewMode('search')}
       />

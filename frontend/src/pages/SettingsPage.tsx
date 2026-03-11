@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 
 import { LlmBackendField } from '../components/LlmBackendField';
 import { ScoreThresholdField } from '../components/ScoreThresholdField';
-import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
+import { YoutubeDataStringField } from '../components/YoutubeDataStringField';
 import { type LLMBackend } from '../api/settings';
-import { type LLMBackendSelection, type YouTubeApiKeyStatusTone } from '../hooks/useSettings';
+import { type LLMBackendSelection, type YouTubeStringStatusTone } from '../hooks/useSettings';
 
 type SettingsPageProps = {
   llmBackend: LLMBackendSelection;
@@ -13,12 +13,12 @@ type SettingsPageProps = {
   settingsSaving: boolean;
   settingsMessage: string | null;
   llmRouterCliWarning: string | null;
-  youtubeDataApiKey: string;
-  youtubeDataApiKeyStatusMessage: string | null;
-  youtubeDataApiKeyStatusTone: YouTubeApiKeyStatusTone;
+  youtubeDataString: string;
+  youtubeDataStringStatusMessage: string | null;
+  youtubeDataStringStatusTone: YouTubeStringStatusTone;
   scoreThreshold: number;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
-  onSetYoutubeDataApiKey: (next: string) => void;
+  onSetYoutubeDataString: (next: string) => void;
   onSetScoreThreshold: (next: number) => void;
   onBack: () => void;
 };
@@ -30,12 +30,12 @@ export function SettingsPage({
   settingsSaving,
   settingsMessage,
   llmRouterCliWarning,
-  youtubeDataApiKey,
-  youtubeDataApiKeyStatusMessage,
-  youtubeDataApiKeyStatusTone,
+  youtubeDataString,
+  youtubeDataStringStatusMessage,
+  youtubeDataStringStatusTone,
   scoreThreshold,
   onSetLlmBackend,
-  onSetYoutubeDataApiKey,
+  onSetYoutubeDataString,
   onSetScoreThreshold,
   onBack
 }: SettingsPageProps) {
@@ -83,14 +83,14 @@ export function SettingsPage({
             compact
           />
 
-          <YoutubeDataApiKeyField
-            id="settings-youtube-data-api-key"
-            value={youtubeDataApiKey}
+          <YoutubeDataStringField
+            id="settings-youtube-data-string"
+            value={youtubeDataString}
             loading={settingsLoading}
             saving={settingsSaving}
-            statusMessage={youtubeDataApiKeyStatusMessage}
-            statusTone={youtubeDataApiKeyStatusTone}
-            onChange={onSetYoutubeDataApiKey}
+            statusMessage={youtubeDataStringStatusMessage}
+            statusTone={youtubeDataStringStatusTone}
+            onChange={onSetYoutubeDataString}
             compact
           />
 

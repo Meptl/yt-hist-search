@@ -7,11 +7,11 @@ import {
   type LLMBackend,
   type SettingsResponse,
   updateSettings,
-  validateYouTubeDataApiKey
+  validateYouTubeDataString
 } from '../api/settings';
 
 export type LLMBackendSelection = LLMBackend | 'none';
-export type YouTubeApiKeyStatusTone = 'muted' | 'success' | 'error';
+export type YouTubeStringStatusTone = 'muted' | 'success' | 'error';
 
 export function useSettings() {
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -23,9 +23,9 @@ export function useSettings() {
   const [backendDriverDetectionError, setBackendDriverDetectionError] = useState<string | null>(null);
   const [backendDriverAvailableProviders, setBackendDriverAvailableProviders] = useState<string[]>([]);
   const [llmBackend, setLlmBackendState] = useState<LLMBackendSelection>('none');
-  const [youtubeDataApiKey, setYoutubeDataApiKeyState] = useState('');
-  const [youtubeDataApiKeyStatusMessage, setYoutubeDataApiKeyStatusMessage] = useState<string | null>(null);
-  const [youtubeDataApiKeyStatusTone, setYoutubeDataApiKeyStatusTone] = useState<YouTubeApiKeyStatusTone>('muted');
+  const [youtubeDataString, setYoutubeDataStringState] = useState('');
+  const [youtubeDataStringStatusMessage, setYoutubeDataStringStatusMessage] = useState<string | null>(null);
+  const [youtubeDataStringStatusTone, setYoutubeDataStringStatusTone] = useState<YouTubeStringStatusTone>('muted');
   const [scoreThreshold, setScoreThresholdState] = useState(0.7);
   const saveRequestIdRef = useRef(0);
   const [llmBackendOptions, setLlmBackendOptions] = useState<LLMBackend[]>([
@@ -42,7 +42,7 @@ export function useSettings() {
     setBackendDriverOptions(settings.backend_driver_options);
     setBackendDriverDetectionError(settings.backend_driver_detection_error);
     setBackendDriverAvailableProviders(settings.backend_driver_available_providers);
-    setYoutubeDataApiKeyState(settings.youtube_data_api_key ?? '');
+    setYoutubeDataStringState(settings.youtube_data_string ?? '');
     setScoreThresholdState(settings.score_threshold);
     setLlmRouterCliWarning(settings.llm_router_cli_warning);
   }, []);
@@ -130,9 +130,9 @@ export function useSettings() {
     [persistSettings]
   );
 
-  const setYoutubeDataApiKey = useCallback(
+  const setYoutubeDataString = useCallback(
     (next: string) => {
-      setYoutubeDataApiKeyState(next);
+      setYoutubeDataStringState(next);
       const requestId = saveRequestIdRef.current + 1;
       saveRequestIdRef.current = requestId;
       setSettingsSaving(true);
@@ -140,26 +140,26 @@ export function useSettings() {
 
       const normalized = next.trim() || null;
       if (normalized) {
-        setYoutubeDataApiKeyStatusTone('muted');
-        setYoutubeDataApiKeyStatusMessage('Checking YouTube Data API key...');
+        setYoutubeDataStringStatusTone('muted');
+        setYoutubeDataStringStatusMessage('Checking YouTube Data API key...');
       } else {
-        setYoutubeDataApiKeyStatusTone('muted');
-        setYoutubeDataApiKeyStatusMessage(null);
+        setYoutubeDataStringStatusTone('muted');
+        setYoutubeDataStringStatusMessage(null);
       }
 
       void (async () => {
         try {
           if (normalized) {
-            const validation = await validateYouTubeDataApiKey(normalized);
+            const validation = await validateYouTubeDataString(normalized);
             if (requestId !== saveRequestIdRef.current) {
               return;
             }
-            setYoutubeDataApiKeyStatusTone('success');
-            setYoutubeDataApiKeyStatusMessage(validation.message);
+            setYoutubeDataStringStatusTone('success');
+            setYoutubeDataStringStatusMessage(validation.message);
           }
 
           const saved = await updateSettings({
-            youtube_data_api_key: normalized
+            youtube_data_string: normalized
           });
           if (requestId !== saveRequestIdRef.current) {
             return;
@@ -169,8 +169,8 @@ export function useSettings() {
           if (requestId !== saveRequestIdRef.current) {
             return;
           }
-          setYoutubeDataApiKeyStatusTone('error');
-          setYoutubeDataApiKeyStatusMessage(
+          setYoutubeDataStringStatusTone('error');
+          setYoutubeDataStringStatusMessage(
             err instanceof Error ? err.message : 'Unexpected error while validating API key'
           );
         } finally {
@@ -214,13 +214,13 @@ export function useSettings() {
     settingsSaving,
     settingsMessage,
     llmRouterCliWarning,
-    youtubeDataApiKey,
-    youtubeDataApiKeyStatusMessage,
-    youtubeDataApiKeyStatusTone,
+    youtubeDataString,
+    youtubeDataStringStatusMessage,
+    youtubeDataStringStatusTone,
     scoreThreshold,
     setLlmBackend,
     setBackendDriver,
-    setYoutubeDataApiKey,
+    setYoutubeDataString,
     setScoreThreshold
   };
 }

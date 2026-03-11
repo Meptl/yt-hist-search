@@ -45,11 +45,11 @@ def _normalize_topic_category(topic_category_url: str) -> str | None:
     return normalized or None
 
 
-def _build_youtube_client(api_key: str):
+def _build_youtube_client(youtube_string: str):
     return build(
         serviceName="youtube",
         version="v3",
-        developerKey=api_key,
+        developerKey=youtube_string,
         cache_discovery=False,
     )
 
@@ -69,12 +69,12 @@ def _http_error_message(exc: HttpError) -> str:
     return str(exc)
 
 
-def validate_youtube_api_key(api_key: str) -> None:
-    normalized_api_key = api_key.strip()
-    if not normalized_api_key:
+def validate_youtube_string(youtube_string: str) -> None:
+    normalized_youtube_string = youtube_string.strip()
+    if not normalized_youtube_string:
         raise RuntimeError("YouTube Data API key is empty.")
 
-    youtube_client = _build_youtube_client(normalized_api_key)
+    youtube_client = _build_youtube_client(normalized_youtube_string)
     request = youtube_client.videos().list(
         id=_KEY_VALIDATION_VIDEO_ID,
         part="id",
@@ -156,14 +156,14 @@ def _fetch_channel_logo_map(youtube_client, channel_ids: list[str]) -> dict[str,
 
 def fetch_video_metadata_map(
     *,
-    api_key: str,
+    youtube_string: str,
     video_ids: list[str],
 ) -> dict[str, YouTubeVideoMetadata]:
     unique_video_ids = sorted({video_id.strip() for video_id in video_ids if video_id.strip()})
     if not unique_video_ids:
         return {}
 
-    youtube_client = _build_youtube_client(api_key)
+    youtube_client = _build_youtube_client(youtube_string)
     results: dict[str, YouTubeVideoMetadata] = {}
     channel_ids: set[str] = set()
     video_channel_ids: dict[str, str] = {}
