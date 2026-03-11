@@ -48,7 +48,7 @@ from ythist.settings import (
 )
 from ythist.llm_router import LLMRouterError, rewrite_prompt_with_router
 
-app = FastAPI(title="yt-hist", version="0.1.0")
+app = FastAPI(title="yt-hist-search", version="0.1.0")
 logger = logging.getLogger(__name__)
 
 

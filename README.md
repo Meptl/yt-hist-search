@@ -1,4 +1,4 @@
-# yt-hist
+# yt-hist-search
 
 App for searching Youtube watch history with semantic retrieval.
 

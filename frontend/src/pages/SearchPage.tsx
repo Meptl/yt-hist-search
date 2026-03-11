@@ -148,7 +148,7 @@ export function SearchPage({
       <main className="app-shell">
         <header className="hero">
           <div className="hero-top">
-            <h1 className="app-title">yt-hist</h1>
+            <h1 className="app-title">yt-hist-search</h1>
             <div className="icon-actions">
               <span className="index-size-text">
                 {indexedDocuments.toLocaleString()} document{indexedDocuments === 1 ? '' : 's'} indexed

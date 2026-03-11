@@ -1,12 +1,12 @@
 {
-  "name": "yt-hist-desktop",
+  "name": "yt-hist-search-desktop",
   "author": {
     "email": "meptl@meptl.com"
   },
   "homepage": "meptl.com",
   "version": "0.0.1",
   "private": true,
-  "description": "Electron shell for local yt-hist backend and frontend",
+  "description": "Electron shell for local yt-hist-search backend and frontend",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently -k \"pnpm --dir frontend dev\" \"wait-on tcp:$FRONTEND_PORT && electron electron/main.cjs\"",

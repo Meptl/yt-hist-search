@@ -392,7 +392,7 @@ export function App() {
         <main className="app-shell">
           <header className="hero">
             <div className="hero-top">
-              <h1 className="app-title">yt-hist</h1>
+              <h1 className="app-title">yt-hist-search</h1>
             </div>
           </header>
           <section className="landing-panel">

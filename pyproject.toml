@@ -1,5 +1,5 @@
 [project]
-name = "yt-hist"
+name = "yt-hist-search"
 version = "0.1.0"
 description = "Local YouTube history semantic search and RAG service"
 readme = "README.md"
