@@ -253,6 +253,7 @@ body {
   border: 1px solid var(--edge);
   border-radius: 12px;
   min-height: 110px;
+  resize: vertical;
   padding: 0.85rem 3.75rem 0.85rem 0.85rem;
   font: inherit;
   color: var(--ink);
