@@ -13,10 +13,10 @@ _STATIC_FILTERS_SUPPORTED: tuple[str, ...] = (
 )
 
 _DEFAULT_COMMAND_CANDIDATES: dict[LLMRouter, list[list[str]]] = {
-    "codex": [["codex", "exec"], ["codex"]],
-    "claude": [["claude", "-p"], ["claude"]],
-    "gemini": [["gemini", "-p"], ["gemini"]],
-    "opencode": [["opencode", "run", "-p"], ["opencode"]],
+    "codex": [["codex", "exec"]],
+    "claude": [["claude", "-p"]],
+    "gemini": [["gemini", "-p"]],
+    "opencode": [["opencode", "run", "-p"]],
 }
 
 
@@ -81,10 +81,6 @@ def rewrite_prompt_with_router(
 ) -> LLMRouterResult:
     command_candidates = _DEFAULT_COMMAND_CANDIDATES[llm_router]
     prompt = _build_router_prompt(user_query)
-    print(
-        f"[llm-router] sending prompt to `{llm_router}`:\n"
-        f"{prompt}"
-    )
     failures: list[str] = []
     missing_command = False
 
@@ -108,27 +104,21 @@ def rewrite_prompt_with_router(
                 missing_command = True
                 break
             except subprocess.TimeoutExpired:
-                failures.append(
-                    f"`{' '.join(command)}` timed out after {timeout_seconds}s."
-                )
+                failures.append(f"{llm_router} CLI timed out after {timeout_seconds}s.")
                 continue
             except OSError as exc:
-                failures.append(f"`{' '.join(command)}` failed to execute: {exc}")
+                failures.append(f"{llm_router} CLI failed to execute: {exc}")
                 continue
 
             if result.returncode != 0:
                 stderr = (result.stderr or "").strip()
                 details = stderr or f"exit code {result.returncode}"
-                failures.append(f"`{' '.join(command)}` failed: {details}")
+                failures.append(f"{llm_router} CLI failed: {details}")
                 continue
 
             raw_output = (result.stdout or "").strip()
             if not raw_output and result.stderr:
                 raw_output = result.stderr.strip()
-            print(
-                f"[llm-router] response from `{llm_router}` via `{' '.join(command)}`:\n"
-                f"{raw_output}"
-            )
             payload = _extract_json_object(raw_output)
             new_prompt = payload.get("new_prompt")
             if not isinstance(new_prompt, str) or not new_prompt.strip():
