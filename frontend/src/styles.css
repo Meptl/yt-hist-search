@@ -58,6 +58,12 @@ body {
   font-size: clamp(1.2rem, 2.2vw, 1.5rem);
 }
 
+.index-size-text {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .landing-panel {
   padding-top: 0.5rem;
   display: grid;

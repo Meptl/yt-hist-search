@@ -20,6 +20,7 @@ type ImportErrorDetails = {
 type IndexStatusResponse = {
   index_ready: boolean;
   index_dir: string;
+  indexed_documents: number;
 };
 
 type ValidateTakeoutResponse = {
@@ -102,6 +103,7 @@ function parseImportError(
 export function App() {
   const [checkingIndex, setCheckingIndex] = useState(true);
   const [indexReady, setIndexReady] = useState(false);
+  const [indexedDocuments, setIndexedDocuments] = useState(0);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<ImportErrorDetails | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('search');
@@ -157,12 +159,15 @@ export function App() {
         }
 
         if (isActive) {
-          setIndexReady((payload as IndexStatusResponse).index_ready);
+          const status = payload as IndexStatusResponse;
+          setIndexReady(status.index_ready);
+          setIndexedDocuments(status.indexed_documents);
         }
       } catch (err) {
         if (isActive) {
           console.error('Failed to check index status', err);
           setIndexReady(false);
+          setIndexedDocuments(0);
         }
       } finally {
         if (isActive) {
@@ -218,7 +223,21 @@ export function App() {
         if (status.status === 'completed') {
           setImporting(false);
           setActiveImportJobId(null);
-          setIndexReady(true);
+          try {
+            const indexStatusResponse = await fetch('/api/index-status');
+            const indexStatusPayload = (await indexStatusResponse.json()) as
+              | IndexStatusResponse
+              | { detail: string };
+            if (indexStatusResponse.ok) {
+              const parsedStatus = indexStatusPayload as IndexStatusResponse;
+              setIndexReady(parsedStatus.index_ready);
+              setIndexedDocuments(parsedStatus.indexed_documents);
+            } else {
+              setIndexReady(true);
+            }
+          } catch {
+            setIndexReady(true);
+          }
           setViewMode('search');
           setImportProgress(100);
           return;
@@ -452,6 +471,7 @@ export function App() {
 
   return (
     <SearchPage
+      indexedDocuments={indexedDocuments}
       onOpenSettings={() => setViewMode('settings')}
       onOpenLanding={() => {
         setLandingOpenedFromSearch(true);

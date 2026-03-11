@@ -118,6 +118,7 @@ class ImportTakeoutPathRequest(BaseModel):
 class IndexStatusResponse(BaseModel):
     index_ready: bool
     index_dir: str
+    indexed_documents: int
 
 
 ImportJobState = Literal["running", "completed", "failed"]
@@ -754,14 +755,20 @@ def index_status_api_endpoint(
     started = time.perf_counter()
     index_path = Path(index_dir)
     ready = index_ready(index_path)
+    indexed_documents = len(get_indexed_video_ids(index_path))
     elapsed_ms = (time.perf_counter() - started) * 1000
     logger.info(
-        "timing api.index-status elapsed_ms=%.2f index_ready=%s index_dir=%s",
+        "timing api.index-status elapsed_ms=%.2f index_ready=%s indexed_documents=%s index_dir=%s",
         elapsed_ms,
         ready,
+        indexed_documents,
         index_path,
     )
-    return IndexStatusResponse(index_ready=ready, index_dir=str(index_path))
+    return IndexStatusResponse(
+        index_ready=ready,
+        index_dir=str(index_path),
+        indexed_documents=indexed_documents,
+    )
 
 
 @app.get("/api/search", response_model=SearchResponse)

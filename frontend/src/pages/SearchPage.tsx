@@ -27,6 +27,7 @@ type ErrorPayload = {
 };
 
 type SearchPageProps = {
+  indexedDocuments: number;
   onOpenSettings: () => void;
   onOpenLanding: () => void;
 };
@@ -60,7 +61,11 @@ function extractFieldValue(text: string, label: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
-export function SearchPage({ onOpenSettings, onOpenLanding }: SearchPageProps) {
+export function SearchPage({
+  indexedDocuments,
+  onOpenSettings,
+  onOpenLanding
+}: SearchPageProps) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,6 +170,9 @@ export function SearchPage({ onOpenSettings, onOpenLanding }: SearchPageProps) {
               </button>
             </div>
           </div>
+          <p className="index-size-text">
+            {indexedDocuments.toLocaleString()} document{indexedDocuments === 1 ? '' : 's'} indexed
+          </p>
         </header>
 
         <form className="query-panel" onSubmit={onSubmit}>
