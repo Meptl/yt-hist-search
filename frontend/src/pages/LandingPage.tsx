@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 
-import { BackendDriverField } from '../components/BackendDriverField';
 import { LlmBackendField } from '../components/LlmBackendField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
-import { type BackendDriver, type BackendDriverOption, type LLMBackend } from '../api/settings';
+import { type LLMBackend } from '../api/settings';
 import { type LLMBackendSelection, type YouTubeApiKeyStatusTone } from '../hooks/useSettings';
 
 type ImportErrorDetails = {
@@ -21,9 +20,6 @@ type TakeoutValidationResult = {
 
 type LandingPageProps = {
   importing: boolean;
-  backendDriver: BackendDriver;
-  backendDriverOptions: BackendDriverOption[];
-  backendDriverDetectionError: string | null;
   llmBackend: LLMBackendSelection;
   llmBackendOptions: LLMBackend[];
   settingsLoading: boolean;
@@ -34,7 +30,6 @@ type LandingPageProps = {
   youtubeDataApiKeyStatusMessage: string | null;
   youtubeDataApiKeyStatusTone: YouTubeApiKeyStatusTone;
   importError: ImportErrorDetails | null;
-  onSetBackendDriver: (next: BackendDriver) => void;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
   onImportTakeoutFile: (file: File) => Promise<boolean>;
@@ -45,9 +40,6 @@ type LandingPageProps = {
 
 export function LandingPage({
   importing,
-  backendDriver,
-  backendDriverOptions,
-  backendDriverDetectionError,
   llmBackend,
   llmBackendOptions,
   settingsLoading,
@@ -58,7 +50,6 @@ export function LandingPage({
   youtubeDataApiKeyStatusMessage,
   youtubeDataApiKeyStatusTone,
   importError,
-  onSetBackendDriver,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
   onImportTakeoutFile,
@@ -250,16 +241,6 @@ export function LandingPage({
           ) : null}
 
           <h2>Additional Settings</h2>
-
-          <BackendDriverField
-            id="landing-backend-driver"
-            value={backendDriver}
-            options={backendDriverOptions}
-            loading={settingsLoading}
-            saving={settingsSaving}
-            detectionError={backendDriverDetectionError}
-            onChange={onSetBackendDriver}
-          />
 
           <LlmBackendField
             id="landing-llm-backend"

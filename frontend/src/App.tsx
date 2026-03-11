@@ -112,9 +112,6 @@ export function App() {
   const [importJobState, setImportJobState] = useState<ImportJobState>('running');
 
   const {
-    backendDriver,
-    backendDriverOptions,
-    backendDriverDetectionError,
     llmBackend,
     llmBackendOptions,
     settingsLoading,
@@ -125,7 +122,6 @@ export function App() {
     youtubeDataApiKeyStatusMessage,
     youtubeDataApiKeyStatusTone,
     scoreThreshold,
-    setBackendDriver,
     setLlmBackend,
     setYoutubeDataApiKey,
     setScoreThreshold
@@ -410,9 +406,6 @@ export function App() {
     return (
       <LandingPage
         importing={importing}
-        backendDriver={backendDriver}
-        backendDriverOptions={backendDriverOptions}
-        backendDriverDetectionError={backendDriverDetectionError}
         llmBackend={llmBackend}
         llmBackendOptions={llmBackendOptions}
         settingsLoading={settingsLoading}
@@ -423,7 +416,6 @@ export function App() {
         youtubeDataApiKeyStatusMessage={youtubeDataApiKeyStatusMessage}
         youtubeDataApiKeyStatusTone={youtubeDataApiKeyStatusTone}
         importError={importError}
-        onSetBackendDriver={setBackendDriver}
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
         onImportTakeoutFile={onImportTakeoutFile}
@@ -440,9 +432,6 @@ export function App() {
   if (viewMode === 'settings') {
     return (
       <SettingsPage
-        backendDriver={backendDriver}
-        backendDriverOptions={backendDriverOptions}
-        backendDriverDetectionError={backendDriverDetectionError}
         llmBackend={llmBackend}
         llmBackendOptions={llmBackendOptions}
         settingsLoading={settingsLoading}
@@ -453,7 +442,6 @@ export function App() {
         youtubeDataApiKeyStatusMessage={youtubeDataApiKeyStatusMessage}
         youtubeDataApiKeyStatusTone={youtubeDataApiKeyStatusTone}
         scoreThreshold={scoreThreshold}
-        onSetBackendDriver={setBackendDriver}
         onSetLlmBackend={setLlmBackend}
         onSetYoutubeDataApiKey={setYoutubeDataApiKey}
         onSetScoreThreshold={setScoreThreshold}

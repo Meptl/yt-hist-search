@@ -1,16 +1,12 @@
 import { useEffect } from 'react';
 
-import { BackendDriverField } from '../components/BackendDriverField';
 import { LlmBackendField } from '../components/LlmBackendField';
 import { ScoreThresholdField } from '../components/ScoreThresholdField';
 import { YoutubeDataApiKeyField } from '../components/YoutubeDataApiKeyField';
-import { type BackendDriver, type BackendDriverOption, type LLMBackend } from '../api/settings';
+import { type LLMBackend } from '../api/settings';
 import { type LLMBackendSelection, type YouTubeApiKeyStatusTone } from '../hooks/useSettings';
 
 type SettingsPageProps = {
-  backendDriver: BackendDriver;
-  backendDriverOptions: BackendDriverOption[];
-  backendDriverDetectionError: string | null;
   llmBackend: LLMBackendSelection;
   llmBackendOptions: LLMBackend[];
   settingsLoading: boolean;
@@ -21,7 +17,6 @@ type SettingsPageProps = {
   youtubeDataApiKeyStatusMessage: string | null;
   youtubeDataApiKeyStatusTone: YouTubeApiKeyStatusTone;
   scoreThreshold: number;
-  onSetBackendDriver: (next: BackendDriver) => void;
   onSetLlmBackend: (next: LLMBackendSelection) => void;
   onSetYoutubeDataApiKey: (next: string) => void;
   onSetScoreThreshold: (next: number) => void;
@@ -29,9 +24,6 @@ type SettingsPageProps = {
 };
 
 export function SettingsPage({
-  backendDriver,
-  backendDriverOptions,
-  backendDriverDetectionError,
   llmBackend,
   llmBackendOptions,
   settingsLoading,
@@ -42,7 +34,6 @@ export function SettingsPage({
   youtubeDataApiKeyStatusMessage,
   youtubeDataApiKeyStatusTone,
   scoreThreshold,
-  onSetBackendDriver,
   onSetLlmBackend,
   onSetYoutubeDataApiKey,
   onSetScoreThreshold,
@@ -80,17 +71,6 @@ export function SettingsPage({
         </header>
 
         <section className="query-panel settings-panel">
-          <BackendDriverField
-            id="settings-backend-driver"
-            value={backendDriver}
-            options={backendDriverOptions}
-            loading={settingsLoading}
-            saving={settingsSaving}
-            detectionError={backendDriverDetectionError}
-            onChange={onSetBackendDriver}
-            compact
-          />
-
           <LlmBackendField
             id="settings-llm-backend"
             value={llmBackend}
