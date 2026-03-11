@@ -1,6 +1,10 @@
 {
   "name": "yt-hist-desktop",
-  "version": "0.1.0",
+  "author": {
+    "email": "meptl@meptl.com"
+  },
+  "homepage": "meptl.com",
+  "version": "0.0.1",
   "private": true,
   "description": "Electron shell for local yt-hist backend and frontend",
   "main": "electron/main.cjs",
