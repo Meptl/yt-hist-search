@@ -7,6 +7,7 @@ const path = require('node:path');
 const BACKEND_HOST = process.env.BACKEND_HOST || process.env.YTHIST_BACKEND_HOST || '127.0.0.1';
 const BACKEND_PORT = Number(process.env.BACKEND_PORT || '8000');
 const IS_DEV = !app.isPackaged;
+const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 let backendProcess = null;
 
@@ -22,9 +23,8 @@ function frontendUrl() {
 }
 
 function resolveBackendCommand() {
-  const projectRoot = path.resolve(__dirname, '..');
-  const unixPython = path.join(projectRoot, '.venv', 'bin', 'python');
-  const winPython = path.join(projectRoot, '.venv', 'Scripts', 'python.exe');
+  const unixPython = path.join(PROJECT_ROOT, '.venv', 'bin', 'python');
+  const winPython = path.join(PROJECT_ROOT, '.venv', 'Scripts', 'python.exe');
   const uvicornArgs = [
     '-m',
     'uvicorn',
@@ -51,7 +51,7 @@ function resolveBackendCommand() {
 
   return {
     command: 'uv',
-    args: ['run', ...uvicornArgs]
+    args: ['run', '--project', PROJECT_ROOT, ...uvicornArgs]
   };
 }
 
@@ -86,17 +86,30 @@ function startBackend() {
     return;
   }
 
+  const runtimeRoot = IS_DEV ? PROJECT_ROOT : app.getPath('userData');
+  const runtimeVenvPath = path.join(runtimeRoot, '.venv');
+  const pythonPath = path.join(PROJECT_ROOT, 'src');
+  fs.mkdirSync(runtimeRoot, { recursive: true });
+  const backendEnv = {
+    ...process.env,
+    PYTHONPATH: process.env.PYTHONPATH
+      ? `${pythonPath}${path.delimiter}${process.env.PYTHONPATH}`
+      : pythonPath,
+    PYTHONUNBUFFERED: '1'
+  };
+
+  // Avoid uv picking an unrelated active virtual environment from the parent shell.
+  delete backendEnv.VIRTUAL_ENV;
+
+  if (!IS_DEV) {
+    backendEnv.UV_PROJECT_ENVIRONMENT = runtimeVenvPath;
+  }
+
   const { command, args } = resolveBackendCommand();
   backendProcess = spawn(command, args, {
-    cwd: path.resolve(__dirname, '..'),
+    cwd: runtimeRoot,
     stdio: 'pipe',
-    env: {
-      ...process.env,
-      PYTHONPATH: process.env.PYTHONPATH
-        ? `${path.join(__dirname, '..', 'src')}${path.delimiter}${process.env.PYTHONPATH}`
-        : path.join(__dirname, '..', 'src'),
-      PYTHONUNBUFFERED: '1'
-    }
+    env: backendEnv
   });
 
   backendProcess.stdout.on('data', (chunk) => {
